@@ -376,3 +376,21 @@ body{transition:background-color .45s,color .45s}
 .t-count{min-width:64px;text-align:center}
 .t-progress{height:2px;background:var(--line);margin-top:28px;max-width:920px}
 .t-progress i{display:block;height:100%;width:0;background:var(--signal)}
+
+/* ================= v9 — menu fix, hero readability, row breathing room ================= */
+/* backdrop-filter on the scrolled header was trapping the fixed nav overlay inside the header box */
+.site-header.menu-open{background:var(--ink);border-bottom-color:transparent;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+/* service rows: sweep + hairlines bleed past the gutter so hovered text/icon never touch the edges */
+.service-list{border-top:0}
+.service-row{margin-left:-24px;margin-right:-24px;padding-left:24px;padding-right:24px;border-bottom:0;border-top:1px solid var(--line)}
+.service-row:last-child{border-bottom:1px solid var(--line)}
+/* hero sub-copy legibility over the tile field */
+.hero-sub{text-shadow:0 1px 24px var(--scrim2),0 1px 6px var(--scrim2)}
+@media (max-width:768px){
+  .main-nav{height:100vh;height:100dvh}
+  .hero::after{background:linear-gradient(to top,var(--ink) 8%,var(--scrim1) 50%,var(--scrim2) 100%)}
+  .hero::before{height:78%}
+  .hero-title{text-shadow:0 2px 28px var(--scrim2)}
+  .page-hero-ghost{display:none}
+  .service-row{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}
+}

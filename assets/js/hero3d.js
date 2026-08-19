@@ -43,9 +43,11 @@ applyTheme();
 
 window.addEventListener('r208:theme',applyTheme);
 
-var dm=new THREE.Object3D(),mx=0,my=0;
-window.addEventListener('mousemove',function(e){
-  mx=(e.clientX/window.innerWidth-.5)*2;my=(e.clientY/window.innerHeight-.5)*2;});
+var dm=new THREE.Object3D(),mx=0,my=0,lastMove=0;
+function onMove(x,y){mx=(x/window.innerWidth-.5)*2;my=(y/window.innerHeight-.5)*2;lastMove=performance.now();}
+window.addEventListener('pointermove',function(e){onMove(e.clientX,e.clientY);},{passive:true});
+window.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length)onMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+var AMP=window.innerWidth<768?.72:1.15;
 
 function resize(){
   var w=cv.clientWidth||window.innerWidth,h=cv.clientHeight||window.innerHeight;
@@ -57,14 +59,17 @@ setTimeout(resize,100);
 var act={x:15,z:9},tm=0,tmp=new THREE.Color();
 function anim(t){
   var time=t*.001;tm+=.016;
-  if(tm>2.4){tm=0;act.x=Math.floor(Math.random()*COLS);act.z=Math.floor(Math.random()*ROWS);}
-  var gx=mx*10,gz=my*6-1,k=0;
+  if(tm>1.9){tm=0;act.x=Math.floor(Math.random()*COLS);act.z=Math.floor(Math.random()*ROWS);}
+  var idle=(t-lastMove)>3000;
+  var gx=idle?Math.sin(time*.5)*10:mx*10;
+  var gz=idle?Math.cos(time*.35)*6-1:my*6-1;
+  var k=0;
   for(var x=0;x<COLS;x++){for(var z=0;z<ROWS;z++){
     var px=(x-COLS/2)*GAP,pz=(z-ROWS/2)*GAP;
     var wv=Math.sin(px*.32+time*1.1)*Math.cos(pz*.3+time*.8);
     var dx=px-gx,dz=pz-gz;
     var glow=Math.exp(-(dx*dx+dz*dz)/22);
-    var h=.4+(wv+1)*1.15+glow*.9;
+    var h=.4+(wv+1)*AMP+glow*.9;
     var on=(x===act.x&&z===act.z);
     if(on)h=1.9+Math.sin(time*4)*.3;
     dm.position.set(px,h/2-1.4,pz);dm.scale.set(1,h,1);dm.updateMatrix();

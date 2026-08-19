@@ -6,7 +6,8 @@ var RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var TOUCH=window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
 /* smooth scroll */
-if(window.Lenis&&!RM){var ln=new Lenis({lerp:.1,smoothWheel:true});(function r(t){ln.raf(t);requestAnimationFrame(r);})();}
+var lenis=null;
+if(window.Lenis&&!RM){lenis=new Lenis({lerp:.1,smoothWheel:true});(function r(t){lenis.raf(t);requestAnimationFrame(r);})();}
 
 /* theme toggle */
 var ttBtn=document.getElementById('theme-toggle');
@@ -66,8 +67,18 @@ window.addEventListener('scroll',sc,{passive:true});sc();
 
 /* mobile menu */
 var tg=document.querySelector('.menu-toggle'),nv=document.querySelector('.main-nav');
-if(tg&&nv){tg.addEventListener('click',function(){tg.classList.toggle('is-open');nv.classList.toggle('is-open');});
-  nv.addEventListener('click',function(e){if(e.target.closest('a')){tg.classList.remove('is-open');nv.classList.remove('is-open');}});}
+if(tg&&nv){
+  function setMenu(open){
+    tg.classList.toggle('is-open',open);nv.classList.toggle('is-open',open);
+    if(hd)hd.classList.toggle('menu-open',open);
+    document.documentElement.style.overflow=open?'hidden':'';
+    document.body.style.overflow=open?'hidden':'';
+    if(lenis){if(open)lenis.stop();else lenis.start();}
+  }
+  tg.addEventListener('click',function(){setMenu(!nv.classList.contains('is-open'));});
+  nv.addEventListener('click',function(e){if(e.target.closest('a'))setMenu(false);});
+  window.addEventListener('resize',function(){if(window.innerWidth>768&&nv.classList.contains('is-open'))setMenu(false);});
+}
 
 /* split headlines into masked words — armed instantly, revealed by CSS transition (no GSAP dependency) */
 document.querySelectorAll('[data-split]').forEach(function(el){
