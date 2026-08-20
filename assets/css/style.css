@@ -398,3 +398,6 @@ body{transition:background-color .45s,color .45s}
 /* ================= v10 — rendering performance ================= */
 .marquee-track,.cursor-dot,.cursor-ring,.preloader{will-change:transform}
 .section{content-visibility:auto;contain-intrinsic-size:auto 900px}
+
+/* ================= v11 — composited-only animations ================= */
+.t-progress i{width:100%;transform:scaleX(0);transform-origin:left}

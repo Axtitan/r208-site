@@ -215,7 +215,7 @@ document.querySelectorAll('.testi-slider').forEach(function(sl){
     idx=(i%n+n)%n;
     slides.forEach(function(s,k){s.classList.toggle('is-active',k===idx);});
     if(count)count.textContent=pad(idx)+' / '+pad(n-1);
-    if(prog){prog.style.transition='none';prog.style.width='0';void prog.offsetWidth;prog.style.transition='width 5s linear';prog.style.width='100%';}
+    if(prog){prog.style.transition='none';prog.style.transform='scaleX(0)';void prog.offsetWidth;prog.style.transition='transform 5s linear';prog.style.transform='scaleX(1)';}
   }
   function play(){if(RM)return;stop();timer=setInterval(function(){show(idx+1);},5000);}
   function stop(){if(timer){clearInterval(timer);timer=null;}}

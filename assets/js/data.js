@@ -75,7 +75,7 @@ window.R208_DATA = {
       "year": "2026",
       "client": "Novalend",
       "role": "Design & Build",
-      "img": "https://d8j0ntlcm91z4.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/hf_20260819_192736_72ac6c1c-5257-45f2-b690-5d91aa42453f.png",
+      "img": "https://d2ol7oe51mr4n9.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/2f7f4b6d-636a-42e2-8fa5-dd82d3b4e417.webp",
       "intro": "A lending platform for small businesses that needed to feel like a bank without behaving like one."
     },
     {
@@ -86,7 +86,7 @@ window.R208_DATA = {
       "year": "2026",
       "client": "Atelier Noir",
       "role": "Identity & Commerce",
-      "img": "https://d8j0ntlcm91z4.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/hf_20260819_192736_9ddf0a20-57dc-490a-9101-ba70154012a8.png",
+      "img": "https://d2ol7oe51mr4n9.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/865add55-b142-45f9-a60e-1fba60dd093d.webp",
       "intro": "An independent fashion house moving from wholesale to direct, with an editorial voice worth protecting."
     },
     {
@@ -97,7 +97,7 @@ window.R208_DATA = {
       "year": "2025",
       "client": "Sentinel",
       "role": "Security & Hardening",
-      "img": "https://d8j0ntlcm91z4.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/hf_20260819_193840_2f85e477-c889-4039-86d1-ff68209e860a.png",
+      "img": "https://d2ol7oe51mr4n9.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/a58e1f53-9192-4481-bcb3-461b6801555b.webp",
       "intro": "A regional bank preparing for audit with six months of unreviewed releases behind it."
     },
     {
@@ -108,7 +108,7 @@ window.R208_DATA = {
       "year": "2025",
       "client": "Kinetic",
       "role": "3D & Motion",
-      "img": "https://d8j0ntlcm91z4.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/hf_20260819_192736_4348826a-3e73-4ae4-8d83-c58cd4d97bda.png",
+      "img": "https://d2ol7oe51mr4n9.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/58f272f3-3e1c-4b0f-87b7-46a0bbf779f8.webp",
       "intro": "A sneaker launch with no product in hand and a campaign date already sold to retail."
     },
     {
@@ -119,7 +119,7 @@ window.R208_DATA = {
       "year": "2025",
       "client": "Northfield Supply",
       "role": "Identity & Messaging",
-      "img": "https://d8j0ntlcm91z4.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/hf_20260819_192736_48a97497-6e68-43ef-a1da-5e93566ee964.png",
+      "img": "https://d2ol7oe51mr4n9.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/176e8f83-79e7-47a6-9746-3ac130a78c6b.webp",
       "intro": "A 40-year-old supply company that had accumulated five logos and no rules."
     },
     {
@@ -130,7 +130,7 @@ window.R208_DATA = {
       "year": "2026",
       "client": "Flowstate",
       "role": "Automation & Build",
-      "img": "https://d8j0ntlcm91z4.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/hf_20260819_194426_62aa79cb-2bca-47f4-9306-6acc742f48d8.png",
+      "img": "https://d2ol7oe51mr4n9.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/0f4e24dc-dda6-4ee6-9089-83b47c28c759.webp",
       "intro": "An operations team spending 30 hours a week moving information between four tools."
     }
   ],

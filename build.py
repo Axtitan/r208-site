@@ -3,16 +3,16 @@
 import os, json
 
 R = "/data/r208-site"
-CDN = "https://d8j0ntlcm91z4.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/"
+CDN = "https://d2ol7oe51mr4n9.cloudfront.net/user_3I90NgizzgjlxuNMaWCewcniSuv/"
 IMG = {
-  "hero": CDN+"hf_20260819_192452_576fcd7a-cc31-4abf-b431-b3dd4e61740a.png",
-  "room": CDN+"hf_20260819_192736_cd1f6e1d-a8ab-4fca-9dd6-ec3bc34df55a.png",
-  "fintech": CDN+"hf_20260819_192736_72ac6c1c-5257-45f2-b690-5d91aa42453f.png",
-  "fashion": CDN+"hf_20260819_192736_9ddf0a20-57dc-490a-9101-ba70154012a8.png",
-  "cyber": CDN+"hf_20260819_193840_2f85e477-c889-4039-86d1-ff68209e860a.png",
-  "sneaker": CDN+"hf_20260819_192736_4348826a-3e73-4ae4-8d83-c58cd4d97bda.png",
-  "stationery": CDN+"hf_20260819_192736_48a97497-6e68-43ef-a1da-5e93566ee964.png",
-  "ai": CDN+"hf_20260819_194426_62aa79cb-2bca-47f4-9306-6acc742f48d8.png",
+  "hero": CDN+"7bbf5490-b2cc-46d8-9db4-3587a6b73aed.webp",
+  "room": CDN+"b25b0473-b4fb-49bf-a9ff-d4ea162619dd.webp",
+  "fintech": CDN+"2f7f4b6d-636a-42e2-8fa5-dd82d3b4e417.webp",
+  "fashion": CDN+"865add55-b142-45f9-a60e-1fba60dd093d.webp",
+  "cyber": CDN+"a58e1f53-9192-4481-bcb3-461b6801555b.webp",
+  "sneaker": CDN+"58f272f3-3e1c-4b0f-87b7-46a0bbf779f8.webp",
+  "stationery": CDN+"176e8f83-79e7-47a6-9746-3ac130a78c6b.webp",
+  "ai": CDN+"0f4e24dc-dda6-4ee6-9089-83b47c28c759.webp",
 }
 
 SERVICES = [
@@ -144,14 +144,15 @@ def head(title, desc, active):
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0B0B0A">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-<link rel="preconnect" href="https://unpkg.com">
-<link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net" crossorigin>
+<link rel="preconnect" href="https://d2ol7oe51mr4n9.cloudfront.net" crossorigin>
 <link rel="preload" href="assets/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Geist-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Geist-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"></noscript>
 <script>(function(){try{if(localStorage.getItem('r208-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 <link rel="stylesheet" href="assets/css/style.css">
 <script>

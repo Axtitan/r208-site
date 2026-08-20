@@ -1,5 +1,5 @@
 /* R208 hero3d.js v4 — theme-aware cube field, mouse-reactive glow, roaming Signal tile */
-(function(){
+function boot(){
 'use strict';
 var cv=document.getElementById('hero-canvas');
 if(!cv||!window.THREE)return;
@@ -57,14 +57,20 @@ window.addEventListener('resize',resize);
 requestAnimationFrame(resize);
 setTimeout(resize,100);
 
+var PX=new Float32Array(COLS),PZ=new Float32Array(ROWS);
+for(var pi=0;pi<COLS;pi++)PX[pi]=(pi-COLS/2)*GAP;
+for(var pj=0;pj<ROWS;pj++)PZ[pj]=(pj-ROWS/2)*GAP;
 var inView=true,pageVisible=true;
 if('IntersectionObserver' in window){new IntersectionObserver(function(en){inView=en[0].isIntersecting;},{threshold:0}).observe(cv);}
 document.addEventListener('visibilitychange',function(){pageVisible=!document.hidden;});
 var act={x:15,z:9},lastAct=-10,prevT=0,elapsed=0,tmp=new THREE.Color();
 var str=new Float32Array(N);
 var ACT_EVERY=6; /* seconds between roaming-tile hops */
+var prevRender=0;
 function anim(t){
   if(!inView||!pageVisible){prevT=t;requestAnimationFrame(anim);return;}
+  if(t-prevRender<33){prevT=t;requestAnimationFrame(anim);return;}
+  prevRender=t;
   var dt=Math.min((t-prevT)/1000||0,.05);prevT=t;elapsed+=dt;
   var time=elapsed;
   if(time-lastAct>ACT_EVERY){
@@ -78,10 +84,10 @@ function anim(t){
   var gz=idle?Math.cos(time*.35)*6-1:my*6-1;
   var k=0,actStr=0;
   for(var x=0;x<COLS;x++){for(var z=0;z<ROWS;z++){
-    var px=(x-COLS/2)*GAP,pz=(z-ROWS/2)*GAP;
+    var px=PX[x],pz=PZ[z];
     var wv=Math.sin(px*.32+time*1.1)*Math.cos(pz*.3+time*.8);
-    var dx=px-gx,dz=pz-gz;
-    var glow=Math.exp(-(dx*dx+dz*dz)/22);
+    var dx=px-gx,dz=pz-gz,d2=dx*dx+dz*dz;
+    var glow=d2<180?Math.exp(-d2/22):0;
     var h=.4+(wv+1)*AMP+glow*.9;
     var on=(x===act.x&&z===act.z);
     str[k]+=((on?1:0)-str[k])*sEase;
@@ -102,4 +108,11 @@ function anim(t){
   rn.render(scene,cam);
   requestAnimationFrame(anim);}
 requestAnimationFrame(anim);
-})();
+}
+
+/* defer the whole 3D boot until the page has loaded and the main thread is idle */
+var booted=false;
+function startHero(){if(booted)return;booted=true;boot();}
+if('requestIdleCallback' in window){window.addEventListener('load',function(){requestIdleCallback(startHero,{timeout:2000});});}
+else{window.addEventListener('load',function(){setTimeout(startHero,400);});}
+setTimeout(startHero,4500);
