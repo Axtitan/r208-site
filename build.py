@@ -142,6 +142,13 @@ def head(title, desc, active):
 <title>__TITLE__ — R208 Technologies</title>
 <meta name="description" content="__DESC__">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0B0B0A">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net" crossorigin>
+<link rel="preload" href="assets/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Geist-Medium.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Geist-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -179,7 +186,16 @@ def cta_band(t1, t2):
 </section>""".replace("__T1__", t1).replace("__T2__", t2).replace("__AR__", '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 13L13 1M13 1H4M13 1V10" stroke="#0B0B0A" stroke-width="1.5"/></svg>')
 
 
-def footer():
+def footer(hero=False):
+    scripts = ('<script defer src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>\n'
+               '<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>\n'
+               '<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>\n')
+    if hero:
+        scripts += '<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n'
+    scripts += '<script defer src="assets/js/data.js"></script>\n'
+    if hero:
+        scripts += '<script defer src="assets/js/hero3d.js"></script>\n'
+    scripts += '<script defer src="assets/js/main.js"></script>'
     sl = "".join('<a class="f-link" href="service-%s.html">%s</a>' % (s["slug"], s["name"]) for s in SERVICES[:5])
     return """</main>
 <footer class="site-footer">
@@ -200,15 +216,9 @@ def footer():
 </div>
 </div>
 </footer>
-<script defer src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script defer src="assets/js/data.js"></script>
-<script defer src="assets/js/hero3d.js"></script>
-<script defer src="assets/js/main.js"></script>
+__SCRIPTS__
 </body>
-</html>""".replace("__LOGO__", LOGO).replace("__SL__", sl)
+</html>""".replace("__LOGO__", LOGO).replace("__SL__", sl).replace("__SCRIPTS__", scripts)
 
 
 def page_hero(crumbs, title, accent, lede, ghost=""):
@@ -331,7 +341,7 @@ __CARDS__
 </div>
 </section>""".replace("__T__", t).replace("__N__", str(len(TESTI)))
 
-    write("index.html", h + hero + who + serv + proj + testi + cta_band("Got something", "worth building?") + footer())
+    write("index.html", h + hero + who + serv + proj + testi + cta_band("Got something", "worth building?") + footer(hero=True))
 
 
 # ---------- services ----------

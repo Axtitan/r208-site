@@ -394,3 +394,7 @@ body{transition:background-color .45s,color .45s}
   .page-hero-ghost{display:none}
   .service-row{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}
 }
+
+/* ================= v10 — rendering performance ================= */
+.marquee-track,.cursor-dot,.cursor-ring,.preloader{will-change:transform}
+.section{content-visibility:auto;contain-intrinsic-size:auto 900px}

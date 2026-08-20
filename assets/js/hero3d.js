@@ -4,6 +4,7 @@
 var cv=document.getElementById('hero-canvas');
 if(!cv||!window.THREE)return;
 if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+var MOB=window.innerWidth<768;
 
 function isLight(){return document.documentElement.getAttribute('data-theme')==='light';}
 var baseCol=new THREE.Color(isLight()?0xe3e0d9:0x161615);
@@ -14,9 +15,9 @@ scene.fog=new THREE.Fog(isLight()?0xf5f3ee:0x0b0b0a,16,42);
 var cam=new THREE.PerspectiveCamera(42,1,.1,100);
 cam.position.set(0,8.5,14.5);cam.lookAt(0,0,0);
 var rn=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
-rn.setPixelRatio(Math.min(window.devicePixelRatio,2));
+rn.setPixelRatio(Math.min(window.devicePixelRatio,MOB?1.5:2));
 
-var COLS=30,ROWS=18,GAP=1.16,N=COLS*ROWS;
+var COLS=MOB?22:30,ROWS=MOB?13:18,GAP=1.16,N=COLS*ROWS;
 var mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),
   new THREE.MeshStandardMaterial({color:0xffffff,roughness:.5,metalness:.18}),N);
 mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -56,10 +57,14 @@ window.addEventListener('resize',resize);
 requestAnimationFrame(resize);
 setTimeout(resize,100);
 
+var inView=true,pageVisible=true;
+if('IntersectionObserver' in window){new IntersectionObserver(function(en){inView=en[0].isIntersecting;},{threshold:0}).observe(cv);}
+document.addEventListener('visibilitychange',function(){pageVisible=!document.hidden;});
 var act={x:15,z:9},lastAct=-10,prevT=0,elapsed=0,tmp=new THREE.Color();
 var str=new Float32Array(N);
 var ACT_EVERY=6; /* seconds between roaming-tile hops */
 function anim(t){
+  if(!inView||!pageVisible){prevT=t;requestAnimationFrame(anim);return;}
   var dt=Math.min((t-prevT)/1000||0,.05);prevT=t;elapsed+=dt;
   var time=elapsed;
   if(time-lastAct>ACT_EVERY){
