@@ -56,14 +56,22 @@ window.addEventListener('resize',resize);
 requestAnimationFrame(resize);
 setTimeout(resize,100);
 
-var act={x:15,z:9},tm=0,tmp=new THREE.Color();
+var act={x:15,z:9},lastAct=-10,prevT=0,elapsed=0,tmp=new THREE.Color();
+var str=new Float32Array(N);
+var ACT_EVERY=6; /* seconds between roaming-tile hops */
 function anim(t){
-  var time=t*.001;tm+=.016;
-  if(tm>1.9){tm=0;act.x=Math.floor(Math.random()*COLS);act.z=Math.floor(Math.random()*ROWS);}
+  var dt=Math.min((t-prevT)/1000||0,.05);prevT=t;elapsed+=dt;
+  var time=elapsed;
+  if(time-lastAct>ACT_EVERY){
+    lastAct=time;
+    var nx,nz;do{nx=Math.floor(Math.random()*COLS);nz=Math.floor(Math.random()*ROWS);}while(nx===act.x&&nz===act.z);
+    act.x=nx;act.z=nz;
+  }
+  var sEase=1-Math.pow(.002,dt),cEase=1-Math.pow(.005,dt);
   var idle=(t-lastMove)>3000;
   var gx=idle?Math.sin(time*.5)*10:mx*10;
   var gz=idle?Math.cos(time*.35)*6-1:my*6-1;
-  var k=0;
+  var k=0,actStr=0;
   for(var x=0;x<COLS;x++){for(var z=0;z<ROWS;z++){
     var px=(x-COLS/2)*GAP,pz=(z-ROWS/2)*GAP;
     var wv=Math.sin(px*.32+time*1.1)*Math.cos(pz*.3+time*.8);
@@ -71,14 +79,17 @@ function anim(t){
     var glow=Math.exp(-(dx*dx+dz*dz)/22);
     var h=.4+(wv+1)*AMP+glow*.9;
     var on=(x===act.x&&z===act.z);
-    if(on)h=1.9+Math.sin(time*4)*.3;
+    str[k]+=((on?1:0)-str[k])*sEase;
+    if(on)actStr=str[k];
+    var h=.4+(wv+1)*AMP+glow*.9+str[k]*(1.1+Math.sin(time*3)*.18*str[k]);
     dm.position.set(px,h/2-1.4,pz);dm.scale.set(1,h,1);dm.updateMatrix();
     mesh.setMatrixAt(k,dm.matrix);
-    tmp.copy(baseCol).lerp(lime,on?1:glow*glowK);
-    cols[k].lerp(tmp,on?.14:.08);
+    tmp.copy(baseCol).lerp(lime,Math.max(str[k],glow*glowK));
+    cols[k].lerp(tmp,cEase);
     mesh.instanceColor.setXYZ(k,cols[k].r,cols[k].g,cols[k].b);
     if(on)pl.position.set(px,h+1.5,pz);
     k++;}}
+  pl.intensity=(isLight()?9:22)*Math.max(actStr,.15);
   mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;
   cam.position.x+=(mx*2.4-cam.position.x)*.03;
   cam.position.y+=(8.5-my*1.5-cam.position.y)*.03;
