@@ -42,7 +42,7 @@ export const postCrud = makeCrud({
     { key: "slug", type: "slug" },
     { key: "excerpt", type: "textarea", max: 400 },
     { key: "body", type: "textarea" },
-    { key: "coverUrl", type: "text", max: 500 },
+    { key: "coverUrl", type: "url", max: 500 },
     { key: "tags", type: "text", max: 200 },
     { key: "publishedAt", type: "datetime" },
     { key: "published", type: "boolean" },

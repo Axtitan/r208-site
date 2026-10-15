@@ -3,6 +3,7 @@ import { projectAssets, projects } from "@/db/schema";
 import { ensureSeeded, getPublishedProjects } from "@/lib/site-data";
 import { renderProjectPage } from "@/lib/render";
 import { asc, eq } from "drizzle-orm";
+import { PUBLIC_CACHE } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export async function GET(
   return new Response(renderProjectPage(project, assets, next), {
     headers: {
       "content-type": "text/html; charset=utf-8",
-      "cache-control": "no-store",
+      "cache-control": PUBLIC_CACHE,
     },
   });
 }

@@ -23,6 +23,11 @@ const SECTIONS = [
     title: "Journal",
     desc: "Blog articles for SEO, published at /journal. Markdown supported.",
   },
+  {
+    href: "/admin/enquiries",
+    title: "Enquiries",
+    desc: "Messages sent through the contact form.",
+  },
 ];
 
 export default function AdminHome() {
@@ -31,8 +36,8 @@ export default function AdminHome() {
       <p className="mb-1 text-[11px] uppercase tracking-[0.18em] text-[#8a8a84]">Dashboard</p>
       <h1 className="mb-2 text-3xl font-bold tracking-tight">Content</h1>
       <p className="mb-10 max-w-xl text-sm text-[#8a8a84]">
-        Everything saved here goes live on the site immediately — drafts stay hidden until
-        published.
+        Everything saved here goes live on the site within about a minute — drafts stay hidden
+        until published.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         {SECTIONS.map((s) => (

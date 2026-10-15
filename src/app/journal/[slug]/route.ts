@@ -1,5 +1,6 @@
 import { getPostBySlug } from "@/lib/site-data";
 import { renderJournalPost } from "@/lib/render";
+import { PUBLIC_CACHE } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,6 @@ export async function GET(
     );
   }
   return new Response(renderJournalPost(post), {
-    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": PUBLIC_CACHE },
   });
 }

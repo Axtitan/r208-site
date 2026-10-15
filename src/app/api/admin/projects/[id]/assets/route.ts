@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { projectAssets, projects } from "@/db/schema";
 import { isAdmin, unauthorized } from "@/lib/auth";
+import { checkUpload, safeFilename } from "@/lib/uploads";
 import { eq, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,10 @@ export async function POST(
   }
 
   const buf = Buffer.from(await file.arrayBuffer());
+  const checked = checkUpload(buf, kind as "image" | "hero" | "file");
+  if ("error" in checked) {
+    return Response.json({ error: checked.error }, { status: 415 });
+  }
   const [{ max }] = await db
     .select({ max: sql<number>`coalesce(max(sort_order), -1)::int` })
     .from(projectAssets)
@@ -51,10 +56,10 @@ export async function POST(
     .values({
       projectId,
       kind: kind === "hero" ? "hero" : kind,
-      filename: file.name || "upload",
-      mimeType: file.type || "application/octet-stream",
+      filename: safeFilename(file.name),
+      mimeType: checked.mimeType,
       size: file.size,
-      caption,
+      caption: caption.slice(0, 300),
       sortOrder: max + 1,
       data: buf,
     })

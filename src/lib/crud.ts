@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { isAdmin, unauthorized } from "@/lib/auth";
+import { isSafeUrl } from "@/lib/render";
 import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 
 /* Generic admin CRUD for simple collections (services, testimonials, posts).
@@ -8,7 +9,7 @@ import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 
 export type CrudField = {
   key: string;
-  type: "text" | "textarea" | "boolean" | "slug" | "datetime";
+  type: "text" | "textarea" | "boolean" | "slug" | "datetime" | "url";
   required?: boolean;
   max?: number;
 };
@@ -63,7 +64,10 @@ function buildValues(
       }
     } else {
       if (typeof raw !== "string") return { error: `${f.key} must be text` };
-      const v = f.type === "slug" ? slugify(raw) : f.type === "text" ? raw.trim() : raw;
+      const v =
+        f.type === "slug" ? slugify(raw) : f.type === "text" || f.type === "url" ? raw.trim() : raw;
+      if (f.type === "url" && !isSafeUrl(v))
+        return { error: `${f.key} must start with https:// (or be a /path on this site)` };
       if (f.max && v.length > f.max)
         return { error: `${f.key} is too long (max ${f.max} characters)` };
       if (f.required && !v) return { error: `${f.key} is required` };
@@ -128,8 +132,8 @@ export function makeCrud(cfg: CrudConfig) {
     if (cfg.nowOnPublish && values.published && !values.publishedAt) {
       values.publishedAt = new Date();
     }
-    const [row] = await db.insert(table).values(values).returning();
-    return Response.json(row, { status: 201 });
+    const rows = (await db.insert(table).values(values).returning()) as Record<string, unknown>[];
+    return Response.json(rows[0], { status: 201 });
   }
 
   /* PATCH: reorder — body { ids: number[] } in the desired order */

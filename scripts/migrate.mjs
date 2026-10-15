@@ -4,6 +4,7 @@
 
    Usage:  DATABASE_URL="postgresql://..." npm run db:migrate
 */
+import "dotenv/config"; // loads .env automatically
 import pg from "pg";
 
 const url = process.env.DATABASE_URL;
@@ -17,7 +18,9 @@ if (!url) {
 const isLocal = /localhost|127\.0\.0\.1/.test(url);
 const pool = new pg.Pool({
   connectionString: url,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  // Verify the server certificate (Neon's is publicly trusted) so the
+  // migration can't be silently intercepted.
+  ssl: isLocal ? false : { rejectUnauthorized: true },
 });
 
 const SQL = `
@@ -102,14 +105,46 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   created_at timestamp NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS rate_events (
+  id serial PRIMARY KEY,
+  bucket text NOT NULL,
+  key text NOT NULL,
+  created_at timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  id text PRIMARY KEY,
+  created_at timestamp NOT NULL DEFAULT now(),
+  expires_at timestamp NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS enquiries (
+  id serial PRIMARY KEY,
+  name text NOT NULL,
+  email text NOT NULL,
+  company text NOT NULL DEFAULT '',
+  service text NOT NULL DEFAULT '',
+  budget text NOT NULL DEFAULT '',
+  message text NOT NULL,
+  ip text NOT NULL DEFAULT '',
+  read boolean NOT NULL DEFAULT false,
+  created_at timestamp NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS project_assets_project_idx ON project_assets (project_id);
-CREATE INDEX IF NOT EXISTS login_attempts_ip_idx ON login_attempts (ip, created_at);
+CREATE INDEX IF NOT EXISTS rate_events_lookup_idx ON rate_events (bucket, key, created_at);
+CREATE INDEX IF NOT EXISTS rate_events_created_idx ON rate_events (created_at);
+CREATE INDEX IF NOT EXISTS admin_sessions_expires_idx ON admin_sessions (expires_at);
+CREATE INDEX IF NOT EXISTS enquiries_created_idx ON enquiries (created_at);
+
+-- Superseded by rate_events (login lockout) and admin_sessions.
+DROP TABLE IF EXISTS login_attempts;
 `;
 
 try {
   await pool.query(SQL);
   console.log(
-    "Schema applied: projects, project_assets, services, testimonials, posts, login_attempts"
+    "Schema applied: projects, project_assets, services, testimonials, posts, rate_events, admin_sessions, enquiries"
   );
   console.log("Content auto-seeds on first site visit — no separate seed step needed.");
 } catch (e) {
