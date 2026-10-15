@@ -5,6 +5,10 @@ document.documentElement.classList.add('js-ready');
 var RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var TOUCH=window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
+/* CMS text must be escaped before it goes into innerHTML, or a stray "<" runs as markup */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function safeSrc(u){u=String(u||'').trim();return /^(https?:\/\/|\/(?![\/\\]))/i.test(u)?u:'';}
+
 /* smooth scroll */
 var lenis=null;
 if(window.Lenis&&!RM){lenis=new Lenis({lerp:.1,smoothWheel:true});(function r(t){lenis.raf(t);requestAnimationFrame(r);})();}
@@ -89,7 +93,7 @@ document.querySelectorAll('[data-split]').forEach(function(el){
       node.textContent.split(/\s+/).forEach(function(w){
         if(!w)return;
         var isAcc=acc&&w.toLowerCase().indexOf(acc.toLowerCase())>-1;
-        html+='<span class="word"><span class="'+(isAcc?'accent':'')+'">'+w+'</span></span> ';
+        html+='<span class="word"><span class="'+(isAcc?'accent':'')+'">'+esc(w)+'</span></span> ';
       });
     }else if(node.nodeType===1){
       if(node.tagName==='BR'){html+='<br>';return;}
@@ -153,9 +157,9 @@ document.querySelectorAll('.stat .num[data-count]').forEach(function(el){
   ob.observe(el);});
 
 /* project grids render from the content layer (window.R208_DATA) — the CMS seam */
-function cardHTML(p){return '<a class="project-card is-in" data-cat="'+p.cats+'" data-cursor="view" href="project-'+p.slug+'.html" data-reveal>'
-  +'<div class="thumb"><img src="'+p.img+'" alt="'+p.name+'" loading="lazy"><div class="veil"></div></div>'
-  +'<div class="meta"><h3>'+p.name+'</h3><span class="cat">'+p.cat_label+'</span></div></a>';}
+function cardHTML(p){return '<a class="project-card is-in" data-cat="'+esc(p.cats)+'" data-cursor="view" href="project-'+esc(p.slug)+'.html" data-reveal>'
+  +'<div class="thumb"><img src="'+esc(safeSrc(p.img))+'" alt="'+esc(p.name)+'" loading="lazy"><div class="veil"></div></div>'
+  +'<div class="meta"><h3>'+esc(p.name)+'</h3><span class="cat">'+esc(p.cat_label)+'</span></div></a>';}
 
 if(window.R208_DATA){
   document.querySelectorAll('.project-grid[data-src]').forEach(function(g){
@@ -203,8 +207,8 @@ document.querySelectorAll('.testi-slider').forEach(function(sl){
   if(window.R208_DATA&&R208_DATA.testimonials&&R208_DATA.testimonials.length){
     track.innerHTML=R208_DATA.testimonials.map(function(t,i){
       var ini=t.name.split(' ').map(function(w){return w.charAt(0);}).join('');
-      return '<figure class="t-slide'+(i===0?' is-active':'')+'"><div class="quote-mark">“</div><blockquote>'+t.quote+'</blockquote>'
-        +'<figcaption><span class="avatar">'+ini+'</span><span><span class="name">'+t.name+'</span><span class="role">'+t.role+'</span></span></figcaption></figure>';
+      return '<figure class="t-slide'+(i===0?' is-active':'')+'"><div class="quote-mark">“</div><blockquote>'+esc(t.quote)+'</blockquote>'
+        +'<figcaption><span class="avatar">'+esc(ini)+'</span><span><span class="name">'+esc(t.name)+'</span><span class="role">'+esc(t.role)+'</span></span></figcaption></figure>';
     }).join('');
   }
   var slides=track.querySelectorAll('.t-slide'),n=slides.length,idx=0,timer=null;
@@ -254,10 +258,22 @@ if(form){form.addEventListener('submit',function(e){e.preventDefault();var ok=tr
     var bad=!fl.value.trim()||(fl.type==='email'&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fl.value));
     w.classList.toggle('error',bad);if(bad)ok=false;});
   if(!ok)return;var su=document.querySelector('.form-success');
-  if(window.gsap&&!RM){gsap.to(form,{opacity:0,y:-16,duration:.4,onComplete:function(){
-    form.style.display='none';su.classList.add('is-visible');
-    gsap.fromTo(su,{opacity:0,y:24},{opacity:1,y:0,duration:.6,ease:'power3.out'});}});}
-  else{form.style.display='none';su.classList.add('is-visible');}});}
+  var errEl=form.querySelector('.form-error'),btn=form.querySelector('button[type="submit"]'),btnLbl=btn.querySelector('span');
+  if(btn.disabled)return;
+  var payload={};new FormData(form).forEach(function(v,k){payload[k]=v;});
+  function showErr(msg){errEl.textContent=msg;errEl.style.display='block';}
+  errEl.style.display='none';btn.disabled=true;btnLbl.textContent='Sending…';
+  fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  .then(function(res){return res.json().catch(function(){return {};}).then(function(d){return {ok:res.ok,d:d};});})
+  .then(function(r){
+    btn.disabled=false;btnLbl.textContent='Send it';
+    if(!r.ok){showErr(r.d.error||'Something went wrong. Please email r208technologies@gmail.com.');return;}
+    if(window.gsap&&!RM){gsap.to(form,{opacity:0,y:-16,duration:.4,onComplete:function(){
+      form.style.display='none';su.classList.add('is-visible');
+      gsap.fromTo(su,{opacity:0,y:24},{opacity:1,y:0,duration:.6,ease:'power3.out'});}});}
+    else{form.style.display='none';su.classList.add('is-visible');}
+  })
+  .catch(function(){btn.disabled=false;btnLbl.textContent='Send it';showErr('Could not send — check your connection, or email r208technologies@gmail.com.');});});}
 
 document.querySelectorAll('[data-year]').forEach(function(el){el.textContent=new Date().getFullYear();});
 })();

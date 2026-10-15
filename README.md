@@ -16,8 +16,10 @@ and the API all live in the same Next.js app on Vercel.
 | Services | `/admin/services` | Service rows across the site (detail pages are still static files) |
 | Testimonials | `/admin/testimonials` | Homepage slideshow |
 | Journal | `/admin/posts` | Blog at `/journal` — Markdown body, SEO fields, drafts |
+| Enquiries | `/admin/enquiries` | Inbox for the contact form (optional email alert per message) |
 
-Everything saves straight to Postgres and is live immediately. Drafts stay hidden.
+Everything saves straight to Postgres and is live within about a minute (public
+pages are cached at Vercel's edge for 60 seconds). Drafts stay hidden.
 
 ## First-time setup (~15 minutes)
 
@@ -28,7 +30,7 @@ Everything saves straight to Postgres and is live immediately. Drafts stay hidde
    ```bash
    npm install
    cp .env.example .env
-   # edit .env: paste your DATABASE_URL, set a strong ADMIN_PASSWORD (min 8 chars)
+   # edit .env: paste your DATABASE_URL, set ADMIN_PASSWORD (min 16 chars; use a random 20+)
    ```
 3. **Create the tables:**
    ```bash
@@ -50,18 +52,39 @@ Everything saves straight to Postgres and is live immediately. Drafts stay hidde
    new branch).
 3. Add environment variables in **Vercel → Settings → Environment Variables**:
    - `DATABASE_URL` — the Neon pooled string
-   - `ADMIN_PASSWORD` — your admin password
+   - `ADMIN_PASSWORD` — your admin password (**min 16 characters**, or login is disabled)
    - `SITE_URL` — e.g. `https://r208-site.vercel.app` (used for sitemap/robots)
-4. Deploy. Then run the migration once from your machine against the production
-   `DATABASE_URL` (step 3 above). Visit `/admin` and you're live.
+   - Optional, for contact-form email alerts: `RESEND_API_KEY`,
+     `CONTACT_NOTIFY_EMAIL` (and `CONTACT_FROM_EMAIL` once you verify a domain
+     at resend.com)
+4. **Run the migration first** from your machine against the production
+   `DATABASE_URL` (step 3 above) — it only adds tables, so it's safe while the
+   old version is still live. Then deploy. Visit `/admin` and you're live.
 
 ## Security notes
 
-- No default password exists. If `ADMIN_PASSWORD` is unset, login fails closed.
-- Login is rate-limited: 5 failed attempts from one IP locks it for 15 minutes
-  (tracked in the `login_attempts` table).
-- Sessions are an httpOnly, secure (in production), same-site cookie, 7-day expiry.
-  Changing `ADMIN_PASSWORD` invalidates all sessions.
+- No default password exists. If `ADMIN_PASSWORD` is unset or shorter than 16
+  characters, login fails closed.
+- Login is rate-limited (`rate_events` table): 5 attempts per IP (per /64 for
+  IPv6) per 15 minutes, and at most 60 password checks per hour site-wide. Each
+  attempt is recorded *before* it's counted, so parallel bursts can't slip past.
+  If the database can't count attempts, login is refused rather than unlimited.
+- Sessions are random tokens in an httpOnly, `__Host-`, secure, same-site cookie
+  with a 7-day expiry. Only a hash is stored (`admin_sessions`). **Sign out** ends
+  the session on the server; **All devices** ends every session. Changing
+  `ADMIN_PASSWORD` does *not* sign anyone out — use **All devices** after a change.
+- Writes to `/api/admin/*` and `/api/contact` from another site are rejected
+  (`src/proxy.ts`).
+- Every page sends security headers; public pages have a strict Content Security
+  Policy (only this site's scripts plus build-time hashes of the inline snippets).
+  GSAP, Lenis and three.js are self-hosted in `public/assets/vendor/`.
+- CMS text is HTML-escaped everywhere it's rendered (server and `main.js`), links
+  and image URLs must be `https://`, `mailto:` or a `/path`.
+- Uploads are type-checked from the file's bytes: JPEG/PNG/GIF/WebP/AVIF images,
+  plus PDF/ZIP for downloads. SVG and HTML are refused. Files on draft projects
+  are only visible to the admin.
+- The contact form has a honeypot field and allows 5 messages per IP per hour
+  (100 site-wide).
 - `/admin` and `/api/admin` send `X-Robots-Tag: noindex` and are disallowed in
   `robots.txt`.
 - **This is a single-password admin** — everyone with the password has full access.
@@ -92,8 +115,10 @@ src/app/
   p/[slug]/              dynamic project pages (URL-rewritten to project-*.html)
   sitemap.ts robots.ts   SEO
 src/lib/
-  auth.ts                password check + session cookie
-  rate-limit.ts          login lockout
+  auth.ts                password check + sessions
+  rate-limit.ts          login / contact-form rate limits
+  uploads.ts             upload type checks
+src/proxy.ts             blocks cross-site writes to the API
   crud.ts                generic CRUD factory for collections
   collections.ts         server configs: services / testimonials / posts
   collection-config.ts   admin UI configs (client-safe mirror)

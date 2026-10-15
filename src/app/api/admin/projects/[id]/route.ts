@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { projectAssets, projects, type ProjectLink, type ProjectSection } from "@/db/schema";
 import { isAdmin, unauthorized } from "@/lib/auth";
+import { isSafeUrl } from "@/lib/render";
 import { asc, eq, and, ne } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +66,16 @@ export async function PUT(
   if (str("role") !== undefined) update.role = str("role")!.trim();
   if (str("catLabel") !== undefined) update.catLabel = str("catLabel")!.trim();
   if (str("cats") !== undefined) update.cats = str("cats")!.trim();
-  if (str("heroImageUrl") !== undefined) update.heroImageUrl = str("heroImageUrl")!.trim();
+  if (str("heroImageUrl") !== undefined) {
+    const url = str("heroImageUrl")!.trim();
+    if (!isSafeUrl(url)) {
+      return Response.json(
+        { error: "Hero image URL must start with https:// (or be an uploaded file)." },
+        { status: 400 }
+      );
+    }
+    update.heroImageUrl = url;
+  }
   if (str("intro") !== undefined) update.intro = str("intro")!;
   if (typeof body.featured === "boolean") update.featured = body.featured;
   if (typeof body.published === "boolean") update.published = body.published;
@@ -80,6 +90,13 @@ export async function PUT(
       .filter((l) => l && typeof l.label === "string" && typeof l.url === "string")
       .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
       .filter((l) => l.label || l.url);
+    const bad = update.links.find((l) => !isSafeUrl(l.url, { allowMailto: true }));
+    if (bad) {
+      return Response.json(
+        { error: `Link "${bad.label || bad.url}" must start with https://, http:// or mailto:` },
+        { status: 400 }
+      );
+    }
   }
 
   if (str("slug") !== undefined) {

@@ -5,6 +5,7 @@ import {
   getServices,
   getTestimonials,
 } from "@/lib/site-data";
+import { PUBLIC_CACHE } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export async function GET() {
     return new Response(js, {
       headers: {
         "content-type": "text/javascript; charset=utf-8",
-        "cache-control": "no-store",
+        "cache-control": PUBLIC_CACHE,
       },
     });
   } catch {

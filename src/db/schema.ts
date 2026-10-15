@@ -102,10 +102,35 @@ export const posts = pgTable("posts", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const loginAttempts = pgTable("login_attempts", {
+/* One row per rate-limited action (login attempt, contact submission).
+   `bucket` names the limit, `key` is usually the client IP (or "*" for a
+   site-wide cap). Rows older than 24h are pruned. */
+export const rateEvents = pgTable("rate_events", {
   id: serial("id").primaryKey(),
-  ip: text("ip").notNull(),
-  success: boolean("success").notNull().default(false),
+  bucket: text("bucket").notNull(),
+  key: text("key").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/* Admin sessions. The cookie holds a random token; only its SHA-256 is stored,
+   so a database leak does not hand out working sessions. */
+export const adminSessions = pgTable("admin_sessions", {
+  id: text("id").primaryKey(), // sha256(token), hex
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+/* Contact-form submissions from contact.html. */
+export const enquiries = pgTable("enquiries", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  company: text("company").notNull().default(""),
+  service: text("service").notNull().default(""),
+  budget: text("budget").notNull().default(""),
+  message: text("message").notNull(),
+  ip: text("ip").notNull().default(""),
+  read: boolean("read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -114,3 +139,4 @@ export type ProjectAsset = typeof projectAssets.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type Testimonial = typeof testimonials.$inferSelect;
 export type Post = typeof posts.$inferSelect;
+export type Enquiry = typeof enquiries.$inferSelect;

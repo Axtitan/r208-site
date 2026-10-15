@@ -1,55 +1,80 @@
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE, adminToken, checkPassword } from "@/lib/auth";
-import { clientIp, lockedOutMinutes, recordAttempt } from "@/lib/rate-limit";
+import { MIN_PASSWORD_LENGTH, adminPassword, checkPassword, createSession, sessionCookie } from "@/lib/auth";
+import { clearKey, clientIp, deleteEvents, hit, pruneEvents, rateKey } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
-  const ip = clientIp(req);
+const PER_IP_WINDOW_MINUTES = 15;
+const PER_IP_MAX = 5;
+/* A site-wide ceiling on password checks, so many IPs together (a botnet)
+   still can't make more than ~60 guesses an hour. */
+const SITE_WIDE_MAX_PER_HOUR = 60;
 
-  // Rate limiting is best-effort: if the table is missing (pre-migration)
-  // we still allow login attempts rather than locking the owner out.
+export async function POST(req: Request) {
+  const key = rateKey(clientIp(req));
+
+  // Fail closed: if attempts can't be counted, nobody gets to guess.
+  let siteWideEventId = 0;
   try {
-    const wait = await lockedOutMinutes(ip);
-    if (wait > 0) {
+    const perIp = await hit("login", key, PER_IP_WINDOW_MINUTES);
+    if (perIp.count > PER_IP_MAX) {
       return NextResponse.json(
-        { error: `Too many failed attempts. Try again in about ${wait} minutes.` },
+        {
+          error: `Too many failed attempts. Try again in about ${PER_IP_WINDOW_MINUTES} minutes.`,
+        },
+        { status: 429 }
+      );
+    }
+    // Only attempts that pass the per-IP check count site-wide, so one
+    // hammering IP can't lock everyone else out.
+    const siteWide = await hit("login-all", "*", 60);
+    siteWideEventId = siteWide.id;
+    if (siteWide.count > SITE_WIDE_MAX_PER_HOUR) {
+      return NextResponse.json(
+        { error: "Login is temporarily locked after too many attempts. Try again later." },
         { status: 429 }
       );
     }
   } catch {
-    /* login_attempts table not ready — continue */
-  }
-
-  const body = (await req.json().catch(() => ({}))) as { password?: string };
-
-  let ok = false;
-  try {
-    ok = !!body.password && checkPassword(body.password);
-  } catch {
     return NextResponse.json(
-      { error: "Server misconfigured: ADMIN_PASSWORD is not set." },
-      { status: 500 }
+      { error: "Login is temporarily unavailable. Try again in a minute." },
+      { status: 503 }
     );
   }
 
   try {
-    await recordAttempt(ip, ok);
+    adminPassword();
   } catch {
-    /* best effort */
+    return NextResponse.json(
+      {
+        error: `Server misconfigured: ADMIN_PASSWORD must be set (min ${MIN_PASSWORD_LENGTH} characters).`,
+      },
+      { status: 500 }
+    );
   }
 
-  if (!ok) {
-    return NextResponse.json({ error: "Wrong password" }, { status: 401 });
+  const body = (await req.json().catch(() => ({}))) as { password?: unknown };
+  const password = typeof body.password === "string" ? body.password.slice(0, 1024) : "";
+
+  if (!password || !checkPassword(password)) {
+    return NextResponse.json({ error: "Wrong password." }, { status: 401 });
+  }
+
+  let session: Awaited<ReturnType<typeof createSession>>;
+  try {
+    // A good login clears this IP's failures and doesn't use up the site-wide budget.
+    await clearKey("login", key);
+    await deleteEvents([siteWideEventId]);
+    await pruneEvents();
+    session = await createSession();
+  } catch {
+    return NextResponse.json(
+      { error: "Login is temporarily unavailable. Try again in a minute." },
+      { status: 503 }
+    );
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(ADMIN_COOKIE, adminToken(), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7, // one week
-  });
+  res.cookies.set(sessionCookie(session.token, session.expiresAt));
   return res;
 }

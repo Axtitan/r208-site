@@ -5,7 +5,31 @@ export function esc(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/* Only web links, email links and same-site paths may become an href/src.
+   Blocks javascript:, data: and friends, which would run script on click. */
+export function isSafeUrl(u: string, opts: { allowMailto?: boolean } = {}): boolean {
+  const s = (u || "").trim();
+  if (!s) return true;
+  if (/^\/(?![/\\])/.test(s)) return true;
+  return opts.allowMailto ? /^(https?:\/\/|mailto:)/i.test(s) : /^https?:\/\//i.test(s);
+}
+
+function safeHref(u: string): string {
+  return isSafeUrl(u, { allowMailto: true }) ? u.trim() : "#";
+}
+
+function safeSrc(u: string): string {
+  return isSafeUrl(u) ? u.trim() : "";
+}
+
+/* JSON for an inline script block: "<" is escaped so a value containing a
+   closing script tag can't end the block early. */
+function jsonForScript(v: unknown): string {
+  return JSON.stringify(v).replace(/</g, "\\u003c");
 }
 
 export type AssetMeta = {
@@ -60,7 +84,7 @@ export function renderProjectPage(
       (p.links || [])
         .map(
           (l) =>
-            `<a class="cta-btn cta-btn--ghost" href="${esc(l.url)}" target="_blank" rel="noopener"><span>${esc(l.label)}</span></a>`
+            `<a class="cta-btn cta-btn--ghost" href="${esc(safeHref(l.url))}" target="_blank" rel="noopener noreferrer"><span>${esc(l.label)}</span></a>`
         )
         .join("") +
       `</div></div>`
@@ -88,8 +112,9 @@ export function renderProjectPage(
     ? `<div class="wrap"><a class="next-proj" href="project-${esc(next.slug)}.html"><div><span class="label">Next project</span><div class="n-title">${esc(next.name)}</div></div><span class="round-arrow"><svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M1 13L13 1M13 1H4M13 1V10" stroke="#D6FF4B" stroke-width="1.5"/></svg></span></a></div>`
     : "";
 
-  const heroMedia = p.heroImageUrl
-    ? `<div class="proj-hero-media" data-reveal><img src="${esc(p.heroImageUrl)}" alt="${esc(p.name)}"></div>`
+  const heroSrc = safeSrc(p.heroImageUrl);
+  const heroMedia = heroSrc
+    ? `<div class="proj-hero-media" data-reveal><img src="${esc(heroSrc)}" alt="${esc(p.name)}"></div>`
     : "";
 
   return `<!DOCTYPE html>
@@ -101,7 +126,6 @@ export function renderProjectPage(
 <meta name="description" content="${esc(p.intro)}">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0B0B0A">
-<link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <link rel="preload" href="assets/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Geist-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Geist-Bold.woff2" as="font" type="font/woff2" crossorigin>
@@ -174,9 +198,9 @@ ${sectionsHtml}
 </div>
 </div>
 </footer>
-<script defer src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script defer src="assets/vendor/lenis.min.js"></script>
+<script defer src="assets/vendor/gsap.min.js"></script>
+<script defer src="assets/vendor/ScrollTrigger.min.js"></script>
 <script defer src="assets/js/data.js"></script>
 <script defer src="assets/js/main.js"></script>
 </body>
@@ -225,7 +249,7 @@ export function markdownToHtml(md: string): string {
       .replace(/\*([^*]+)\*/g, "<em>$1</em>")
       .replace(
         /\[([^\]]+)\]\((https?:[^)\s]+)\)/g,
-        '<a href="$2" target="_blank" rel="noopener">$1</a>'
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
       );
 
   const flushPara = () => {
@@ -339,7 +363,6 @@ function journalShell(opts: {
 <meta name="description" content="${esc(opts.description)}">
 <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0B0B0A">
-<link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <link rel="preload" href="/assets/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/Geist-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/Geist-Bold.woff2" as="font" type="font/woff2" crossorigin>
@@ -385,9 +408,9 @@ ${opts.jsonLd || ""}
 </div>
 </div>
 </footer>
-<script defer src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script defer src="/assets/vendor/lenis.min.js"></script>
+<script defer src="/assets/vendor/gsap.min.js"></script>
+<script defer src="/assets/vendor/ScrollTrigger.min.js"></script>
 <script defer src="/assets/js/data.js"></script>
 <script defer src="/assets/js/main.js"></script>
 </body>
@@ -428,14 +451,15 @@ ${items || `<p style="color:var(--steel)">Nothing published yet — the first pi
 export function renderJournalPost(p: PostRow): string {
   const tags = (p.tags || "").split(/\s+/).filter(Boolean);
   const year = fmtDate(p.publishedAt).slice(-4) || "R208";
-  const jsonLd = `<script type="application/ld+json">${JSON.stringify({
+  const coverSrc = safeSrc(p.coverUrl);
+  const jsonLd = `<script type="application/ld+json">${jsonForScript({
     "@context": "https://schema.org",
     "@type": "Article",
     headline: p.title,
     description: p.seoDescription || p.excerpt,
     datePublished: p.publishedAt ? new Date(p.publishedAt).toISOString() : undefined,
     author: { "@type": "Organization", name: "R208 Technologies" },
-    ...(p.coverUrl ? { image: [p.coverUrl] } : {}),
+    ...(coverSrc ? { image: [coverSrc] } : {}),
   })}</script>`;
 
   const body = `<section class="page-hero">
@@ -447,7 +471,7 @@ export function renderJournalPost(p: PostRow): string {
 <div class="label" style="margin-top:18px;color:var(--steel)" data-reveal data-reveal-delay="2">${esc(fmtDate(p.publishedAt))}</div>
 </div>
 </section>
-${p.coverUrl ? `<div class="wrap"><div class="proj-hero-media" data-reveal><img src="${esc(p.coverUrl)}" alt="${esc(p.title)}"></div></div>` : ""}
+${coverSrc ? `<div class="wrap"><div class="proj-hero-media" data-reveal><img src="${esc(coverSrc)}" alt="${esc(p.title)}"></div></div>` : ""}
 <section class="section"><div class="wrap"><div class="proj-body post-body">
 ${markdownToHtml(p.body)}
 </div></div></section>

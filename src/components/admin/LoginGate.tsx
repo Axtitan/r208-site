@@ -22,7 +22,9 @@ export default function LoginGate() {
     if (res.ok) {
       router.refresh();
     } else {
-      setError("Wrong password. Try again.");
+      // Show the server's reason: wrong password, locked out, or unavailable.
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Login failed. Try again.");
     }
   }
 
@@ -48,6 +50,7 @@ export default function LoginGate() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoFocus
+          autoComplete="current-password"
           className="mb-4 w-full border border-[#2a2a27] bg-[#0B0B0A] px-3 py-2.5 text-sm outline-none focus:border-[#D6FF4B]"
           placeholder="••••••••"
         />
