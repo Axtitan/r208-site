@@ -113,9 +113,12 @@ export function renderProjectPage(
     : "";
 
   const heroSrc = safeSrc(p.heroImageUrl);
-  const heroMedia = heroSrc
-    ? `<div class="proj-hero-media" data-reveal><img src="${esc(heroSrc)}" alt="${esc(p.name)}"></div>`
-    : "";
+  const videoSrc = safeSrc(p.heroVideoUrl || "");
+  const heroMedia = videoSrc
+    ? `<div class="proj-hero-media proj-hero-media--video" data-reveal><video src="${esc(videoSrc)}"${heroSrc ? ` poster="${esc(heroSrc)}"` : ""} autoplay muted loop playsinline controls preload="metadata" aria-label="${esc(p.name)} explainer video"></video></div>`
+    : heroSrc
+      ? `<div class="proj-hero-media" data-reveal><img src="${esc(heroSrc)}" alt="${esc(p.name)}"></div>`
+      : "";
 
   return `<!DOCTYPE html>
 <html lang="en">

@@ -24,6 +24,7 @@ type ProjectData = {
   client: string;
   role: string;
   heroImageUrl: string;
+  heroVideoUrl: string;
   intro: string;
   sections: Section[];
   links: LinkItem[];
@@ -501,6 +502,17 @@ export default function ProjectEditor({ id }: { id: string }) {
               placeholder="https://… or /api/files/1"
             />
             <p className="mt-2 text-xs text-[#5b5b56]">Used on the project cards and at the top of the project page.</p>
+            <label className={`${labelCls} mt-5`}>Hero video (optional)</label>
+            <input
+              className={inputCls}
+              value={p.heroVideoUrl || ""}
+              onChange={(e) => patch({ heroVideoUrl: e.target.value })}
+              placeholder="/assets/projects/name.mp4"
+            />
+            <p className="mt-2 text-xs text-[#5b5b56]">
+              An .mp4 or .webm link. When set, the project page plays it (muted, looping) in place of the hero
+              image, and the image becomes its poster.
+            </p>
           </section>
         </div>
       </div>

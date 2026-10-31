@@ -131,6 +131,8 @@ CREATE TABLE IF NOT EXISTS enquiries (
   created_at timestamp NOT NULL DEFAULT now()
 );
 
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS hero_video_url text NOT NULL DEFAULT '';
+
 CREATE INDEX IF NOT EXISTS project_assets_project_idx ON project_assets (project_id);
 CREATE INDEX IF NOT EXISTS rate_events_lookup_idx ON rate_events (bucket, key, created_at);
 CREATE INDEX IF NOT EXISTS rate_events_created_idx ON rate_events (created_at);
