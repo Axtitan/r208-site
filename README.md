@@ -21,6 +21,12 @@ and the API all live in the same Next.js app on Vercel.
 Everything saves straight to Postgres and is live within about a minute (public
 pages are cached at Vercel's edge for 60 seconds). Drafts stay hidden.
 
+A project can also have a **hero video**: put the `.mp4` in `public/assets/projects/`
+(uploads are images and files only, and Postgres is no place for video), deploy, then
+paste its path, e.g. `/assets/projects/stealth-assist.mp4`, into the project's
+"Hero video" field. The page plays it muted and looping with the hero image as its
+poster; the image is still what the project cards show.
+
 ## First-time setup (~15 minutes)
 
 1. **Create the database (free).** Sign up at [neon.tech](https://neon.tech), create a

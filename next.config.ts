@@ -37,6 +37,7 @@ function csp(scriptSrc: string[]): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https:",
+    "media-src 'self' https:",
     "connect-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",

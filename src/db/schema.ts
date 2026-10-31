@@ -36,6 +36,9 @@ export const projects = pgTable("projects", {
   client: text("client").notNull().default(""),
   role: text("role").notNull().default(""),
   heroImageUrl: text("hero_image_url").notNull().default(""),
+  // Optional MP4/WebM shown in place of the hero image on the project page.
+  // The hero image stays the card thumbnail and becomes the video's poster.
+  heroVideoUrl: text("hero_video_url").notNull().default(""),
   intro: text("intro").notNull().default(""),
   sections: jsonb("sections").$type<ProjectSection[]>().notNull().default([]),
   links: jsonb("links").$type<ProjectLink[]>().notNull().default([]),

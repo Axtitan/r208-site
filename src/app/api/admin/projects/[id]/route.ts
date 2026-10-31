@@ -76,6 +76,16 @@ export async function PUT(
     }
     update.heroImageUrl = url;
   }
+  if (str("heroVideoUrl") !== undefined) {
+    const url = str("heroVideoUrl")!.trim();
+    if (!isSafeUrl(url) || (url && !/\.(mp4|webm)(\?.*)?$/i.test(url))) {
+      return Response.json(
+        { error: "Hero video must be an .mp4 or .webm link starting with https:// or /" },
+        { status: 400 }
+      );
+    }
+    update.heroVideoUrl = url;
+  }
   if (str("intro") !== undefined) update.intro = str("intro")!;
   if (typeof body.featured === "boolean") update.featured = body.featured;
   if (typeof body.published === "boolean") update.published = body.published;
