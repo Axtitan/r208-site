@@ -58,6 +58,33 @@ const BRAND_SVG = `<svg width="34" height="23" viewBox="0 0 34 23" fill="none" a
 
 const ARROW = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 13L13 1M13 1H4M13 1V10" stroke="#0B0B0A" stroke-width="1.5"/></svg>`;
 
+/* An iPhone 17 Pro (402 x 874 pt screen) drawn at its real size, then
+   scaled to fit by assets/js/preview.js. The app gets the area between the
+   status bar and the home indicator: 402 x 778, as on the device. Keep in
+   step with public/previews/phone.html. */
+const PHONE_STATUS =
+  `<div class="ap-status" aria-hidden="true"><span class="ap-time">9:41</span><span class="ap-icons">` +
+  `<svg width="19" height="12" viewBox="0 0 19 12"><rect x="0" y="8" width="3.2" height="4" rx="1"/><rect x="5" y="5.5" width="3.2" height="6.5" rx="1"/><rect x="10" y="3" width="3.2" height="9" rx="1"/><rect x="15" y="0" width="3.2" height="12" rx="1"/></svg>` +
+  `<svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.3c2.4 0 4.6.9 6.3 2.5l1.2-1.2C14 1.6 11.4.6 8.5.6S3 1.6 1 3.6l1.2 1.2c1.7-1.6 3.9-2.5 6.3-2.5Zm0 3.4c1.5 0 2.8.5 3.9 1.5l1.2-1.2c-1.4-1.3-3.2-2-5.1-2s-3.7.7-5.1 2l1.2 1.2c1.1-1 2.4-1.5 3.9-1.5Zm0 3.4c.6 0 1.1.2 1.5.6L8.5 11.2 7 9.7c.4-.4.9-.6 1.5-.6Z"/></svg>` +
+  `<svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.6" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="20" height="9" rx="2.3"/><path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" opacity=".45"/></svg>` +
+  `</span></div>`;
+
+function phoneFrame(screenInner: string): string {
+  return (
+    `<div class="ap-fit" data-phone-fit><div class="ap-phone">` +
+    `<i class="ap-btn ap-btn--action"></i><i class="ap-btn ap-btn--vol-up"></i><i class="ap-btn ap-btn--vol-down"></i><i class="ap-btn ap-btn--power"></i><i class="ap-btn ap-btn--cam"></i>` +
+    `<div class="ap-screen ap-screen--phone">${PHONE_STATUS}<div class="ap-island" aria-hidden="true"></div>${screenInner}<div class="ap-home" aria-hidden="true"></div></div>` +
+    `</div></div>`
+  );
+}
+
+function previewFrame(src: string, name: string): string {
+  return (
+    `<iframe class="ap-app" data-src="${esc(src)}" title="${esc(name)} interactive preview" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" hidden></iframe>` +
+    `<button class="ap-launch" type="button" data-preview-launch><span class="ap-play"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M6 3.5L18 11L6 18.5V3.5Z" fill="#0B0B0A"/></svg></span><span>Launch the app</span></button>`
+  );
+}
+
 export function renderProjectPage(
   p: Project,
   assets: AssetMeta[],
@@ -136,14 +163,19 @@ export function renderProjectPage(
       `<div class="ap-copy" data-reveal><div class="section-kicker"><i></i><span class="label">Interactive preview</span></div>` +
       `<h2 class="ap-title">Try ${esc(p.name)} <span class="accent">right here.</span></h2>` +
       `<p class="ap-note">This is the app itself, built for the web and running in your browser on demo data. Nothing you enter is saved or sent anywhere, and it starts fresh each time.</p>` +
-      `<a class="cta-btn cta-btn--ghost" href="${esc(previewSrc)}" target="_blank" rel="noopener"><span>Open full screen</span></a></div>` +
-      `<div class="ap-stage" data-reveal data-reveal-delay="1"><div class="ap-device">` +
-      (device === "browser" ? `<div class="ap-bar" aria-hidden="true"><i></i><i></i><i></i></div>` : `<div class="ap-speaker" aria-hidden="true"></div>`) +
-      `<div class="ap-screen">` +
-      (heroSrc ? `<img class="ap-poster" src="${esc(heroSrc)}" alt="" aria-hidden="true">` : "") +
-      `<iframe data-src="${esc(previewSrc)}" title="${esc(p.name)} interactive preview" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" hidden></iframe>` +
-      `<button class="ap-launch" type="button" data-preview-launch><span class="ap-play"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M6 3.5L18 11L6 18.5V3.5Z" fill="#0B0B0A"/></svg></span><span>Launch the app</span></button>` +
-      `</div></div></div></div></div></section>`
+      (device === "phone"
+        ? `<a class="cta-btn cta-btn--ghost" href="previews/phone.html?src=${encodeURIComponent(previewSrc)}" target="_blank" rel="noopener"><span>Open in a new tab</span></a></div>`
+        : `<a class="cta-btn cta-btn--ghost" href="${esc(previewSrc)}" target="_blank" rel="noopener"><span>Open full screen</span></a></div>`) +
+      `<div class="ap-stage" data-reveal data-reveal-delay="1">` +
+      (device === "phone"
+        ? phoneFrame(
+            (heroSrc ? `<img class="ap-poster" src="${esc(heroSrc)}" alt="" aria-hidden="true">` : "") + previewFrame(previewSrc, p.name)
+          )
+        : `<div class="ap-device"><div class="ap-bar" aria-hidden="true"><i></i><i></i><i></i></div><div class="ap-screen">` +
+          (heroSrc ? `<img class="ap-poster" src="${esc(heroSrc)}" alt="" aria-hidden="true">` : "") +
+          previewFrame(previewSrc, p.name) +
+          `</div></div>`) +
+      `</div></div></div></section>`
     : "";
 
   return `<!DOCTYPE html>
