@@ -39,6 +39,10 @@ export const projects = pgTable("projects", {
   // Optional MP4/WebM shown in place of the hero image on the project page.
   // The hero image stays the card thumbnail and becomes the video's poster.
   heroVideoUrl: text("hero_video_url").notNull().default(""),
+  // Optional interactive preview: a static web build of the app under
+  // /previews/<slug>/, shown in a device frame on the project page.
+  previewUrl: text("preview_url").notNull().default(""),
+  previewDevice: text("preview_device").notNull().default("phone"), // 'phone' | 'browser'
   intro: text("intro").notNull().default(""),
   sections: jsonb("sections").$type<ProjectSection[]>().notNull().default([]),
   links: jsonb("links").$type<ProjectLink[]>().notNull().default([]),

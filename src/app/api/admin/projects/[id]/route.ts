@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { projectAssets, projects, type ProjectLink, type ProjectSection } from "@/db/schema";
 import { isAdmin, unauthorized } from "@/lib/auth";
-import { isSafeUrl } from "@/lib/render";
+import { isPreviewUrl, isSafeUrl } from "@/lib/render";
 import { asc, eq, and, ne } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -85,6 +85,19 @@ export async function PUT(
       );
     }
     update.heroVideoUrl = url;
+  }
+  if (str("previewUrl") !== undefined) {
+    const url = str("previewUrl")!.trim();
+    if (url && !isPreviewUrl(url)) {
+      return Response.json(
+        { error: "App preview must be a page under /previews/, e.g. /previews/my-app/index.html" },
+        { status: 400 }
+      );
+    }
+    update.previewUrl = url;
+  }
+  if (str("previewDevice") !== undefined) {
+    update.previewDevice = str("previewDevice") === "browser" ? "browser" : "phone";
   }
   if (str("intro") !== undefined) update.intro = str("intro")!;
   if (typeof body.featured === "boolean") update.featured = body.featured;
