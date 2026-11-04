@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>App preview — R208 Technologies</title>
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0B0B0A">
+<link rel="stylesheet" href="/assets/css/style.css">
+<style>
+html,body{height:100%}
+body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px 16px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 40%,#1a1a18 0%,#0B0B0A 70%)}
+.solo .ap-fit{max-width:none;width:min(426px,calc((100dvh - 96px) * 426 / 898),calc(100vw - 32px))}
+.solo-note{font:500 12px/1.4 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--steel);text-align:center}
+.solo-missing{display:none;color:var(--paper);text-align:center}
+.solo.is-missing .ap-fit,.solo.is-missing+.solo-note{display:none}
+.solo.is-missing .solo-missing{display:block}
+</style>
+</head>
+<body>
+<!-- Keep this phone in step with phoneFrame() in src/lib/render.ts -->
+<main class="solo" data-preview-solo>
+<div class="ap-fit" data-phone-fit><div class="ap-phone">
+<i class="ap-btn ap-btn--action"></i><i class="ap-btn ap-btn--vol-up"></i><i class="ap-btn ap-btn--vol-down"></i><i class="ap-btn ap-btn--power"></i><i class="ap-btn ap-btn--cam"></i>
+<div class="ap-screen ap-screen--phone">
+<div class="ap-status" aria-hidden="true"><span class="ap-time">9:41</span><span class="ap-icons"><svg width="19" height="12" viewBox="0 0 19 12"><rect x="0" y="8" width="3.2" height="4" rx="1"/><rect x="5" y="5.5" width="3.2" height="6.5" rx="1"/><rect x="10" y="3" width="3.2" height="9" rx="1"/><rect x="15" y="0" width="3.2" height="12" rx="1"/></svg><svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.3c2.4 0 4.6.9 6.3 2.5l1.2-1.2C14 1.6 11.4.6 8.5.6S3 1.6 1 3.6l1.2 1.2c1.7-1.6 3.9-2.5 6.3-2.5Zm0 3.4c1.5 0 2.8.5 3.9 1.5l1.2-1.2c-1.4-1.3-3.2-2-5.1-2s-3.7.7-5.1 2l1.2 1.2c1.1-1 2.4-1.5 3.9-1.5Zm0 3.4c.6 0 1.1.2 1.5.6L8.5 11.2 7 9.7c.4-.4.9-.6 1.5-.6Z"/></svg><svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.6" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="20" height="9" rx="2.3"/><path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" opacity=".45"/></svg></span></div>
+<div class="ap-island" aria-hidden="true"></div>
+<iframe class="ap-app" title="Interactive app preview" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" hidden></iframe>
+<button class="ap-launch" type="button" data-preview-launch hidden></button>
+<div class="ap-home" aria-hidden="true"></div>
+</div>
+</div></div>
+<p class="solo-missing">This preview link isn't valid.</p>
+</main>
+<p class="solo-note">Interactive preview · runs on demo data · nothing is saved</p>
+<script src="/assets/js/preview.js" defer></script>
+</body>
+</html>
