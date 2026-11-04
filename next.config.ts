@@ -108,6 +108,36 @@ const nextConfig: NextConfig = {
           ]
         : []),
       {
+        // App previews (static builds in public/previews) are the one thing
+        // our own pages may frame. Listed after the site-wide rules so these
+        // values win. WebAssembly is allowed here only (Flutter's renderer).
+        source: "/previews/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Robots-Tag", value: "noindex" },
+          ...(isProd
+            ? [
+                {
+                  key: "Content-Security-Policy",
+                  value: [
+                    "default-src 'self'",
+                    "script-src 'self' 'wasm-unsafe-eval'",
+                    "style-src 'self' 'unsafe-inline'",
+                    "font-src 'self' data: https://fonts.gstatic.com",
+                    "img-src 'self' data: blob:",
+                    "connect-src 'self' https://fonts.gstatic.com",
+                    "worker-src 'self' blob:",
+                    "object-src 'none'",
+                    "base-uri 'self'",
+                    "form-action 'none'",
+                    "frame-ancestors 'self'",
+                  ].join("; "),
+                },
+              ]
+            : []),
+        ],
+      },
+      {
         // The admin panel and its API must never appear in search results.
         source: "/admin/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],

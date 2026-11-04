@@ -27,6 +27,15 @@ paste its path, e.g. `/assets/projects/stealth-assist.mp4`, into the project's
 "Hero video" field. The page plays it muted and looping with the hero image as its
 poster; the image is still what the project cards show.
 
+A project can also have an **app preview** for apps that aren't hosted anywhere. Put a
+static web build of the app in `public/previews/<name>/` (for Flutter:
+`flutter build web --base-href /previews/<name>/ --no-web-resources-cdn`), deploy, then
+set the project's "App preview" field to `/previews/<name>/index.html` and pick a phone or
+browser frame. The project page shows a "Launch the app" button that loads it in the
+frame. Only pages under `/previews/` can be framed, and they get their own stricter
+headers in `next.config.ts`. Swap the app's backend for demo data before building, so
+visitors never write to a real database.
+
 ## First-time setup (~15 minutes)
 
 1. **Create the database (free).** Sign up at [neon.tech](https://neon.tech), create a

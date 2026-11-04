@@ -22,6 +22,13 @@ function safeHref(u: string): string {
   return isSafeUrl(u, { allowMailto: true }) ? u.trim() : "#";
 }
 
+/* App previews are framed, so they may only point at our own static builds
+   under /previews/ (never another site, an upload or an admin page). */
+export function isPreviewUrl(u: string): boolean {
+  const s = (u || "").trim();
+  return /^\/previews\/[a-z0-9-]+\/[A-Za-z0-9._\/-]*$/.test(s) && !s.includes("..");
+}
+
 function safeSrc(u: string): string {
   return isSafeUrl(u) ? u.trim() : "";
 }
@@ -120,6 +127,25 @@ export function renderProjectPage(
       ? `<div class="proj-hero-media" data-reveal><img src="${esc(heroSrc)}" alt="${esc(p.name)}"></div>`
       : "";
 
+  // Interactive app preview: our own static build, loaded only when the
+  // visitor asks for it so the page stays light.
+  const previewSrc = isPreviewUrl(p.previewUrl || "") ? p.previewUrl.trim() : "";
+  const device = p.previewDevice === "browser" ? "browser" : "phone";
+  const previewHtml = previewSrc
+    ? `<section class="section app-preview-sec"><div class="wrap"><div class="app-preview app-preview--${device}">` +
+      `<div class="ap-copy" data-reveal><div class="section-kicker"><i></i><span class="label">Interactive preview</span></div>` +
+      `<h2 class="ap-title">Try ${esc(p.name)} <span class="accent">right here.</span></h2>` +
+      `<p class="ap-note">This is the app itself, built for the web and running in your browser on demo data. Nothing you enter is saved or sent anywhere, and it starts fresh each time.</p>` +
+      `<a class="cta-btn cta-btn--ghost" href="${esc(previewSrc)}" target="_blank" rel="noopener"><span>Open full screen</span></a></div>` +
+      `<div class="ap-stage" data-reveal data-reveal-delay="1"><div class="ap-device">` +
+      (device === "browser" ? `<div class="ap-bar" aria-hidden="true"><i></i><i></i><i></i></div>` : `<div class="ap-speaker" aria-hidden="true"></div>`) +
+      `<div class="ap-screen">` +
+      (heroSrc ? `<img class="ap-poster" src="${esc(heroSrc)}" alt="" aria-hidden="true">` : "") +
+      `<iframe data-src="${esc(previewSrc)}" title="${esc(p.name)} interactive preview" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" hidden></iframe>` +
+      `<button class="ap-launch" type="button" data-preview-launch><span class="ap-play"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M6 3.5L18 11L6 18.5V3.5Z" fill="#0B0B0A"/></svg></span><span>Launch the app</span></button>` +
+      `</div></div></div></div></div></section>`
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -171,7 +197,7 @@ export function renderProjectPage(
 <h1 class="page-title" data-split data-split-accent="">${esc(p.name)}</h1>
 <p class="page-lede" data-reveal data-reveal-delay="1">${esc(p.intro)}</p>
 </div>
-</section><div class="wrap">${heroMedia}<div class="proj-meta"><div><div class="label m-label">Client</div><div>${esc(p.client)}</div></div><div><div class="label m-label">Year</div><div>${esc(p.year)}</div></div><div><div class="label m-label">Discipline</div><div>${esc(p.catLabel)}</div></div><div><div class="label m-label">Role</div><div>${esc(p.role)}</div></div></div></div><section class="section"><div class="wrap"><div class="proj-body">
+</section><div class="wrap">${heroMedia}<div class="proj-meta"><div><div class="label m-label">Client</div><div>${esc(p.client)}</div></div><div><div class="label m-label">Year</div><div>${esc(p.year)}</div></div><div><div class="label m-label">Discipline</div><div>${esc(p.catLabel)}</div></div><div><div class="label m-label">Role</div><div>${esc(p.role)}</div></div></div></div>${previewHtml}<section class="section"><div class="wrap"><div class="proj-body">
 ${sectionsHtml}
 </div></div></section>${galleryHtml}${extrasHtml}${nextHtml}<section class="section cta-band">
 <div class="wrap">
@@ -205,7 +231,7 @@ ${sectionsHtml}
 <script defer src="assets/vendor/gsap.min.js"></script>
 <script defer src="assets/vendor/ScrollTrigger.min.js"></script>
 <script defer src="assets/js/data.js"></script>
-<script defer src="assets/js/main.js"></script>
+<script defer src="assets/js/main.js"></script>${previewSrc ? `\n<script defer src="assets/js/preview.js"></script>` : ""}
 </body>
 </html>`;
 }

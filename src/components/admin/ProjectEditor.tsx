@@ -25,6 +25,8 @@ type ProjectData = {
   role: string;
   heroImageUrl: string;
   heroVideoUrl: string;
+  previewUrl: string;
+  previewDevice: string;
   intro: string;
   sections: Section[];
   links: LinkItem[];
@@ -512,6 +514,30 @@ export default function ProjectEditor({ id }: { id: string }) {
             <p className="mt-2 text-xs text-[#5b5b56]">
               An .mp4 or .webm link. When set, the project page plays it (muted, looping) in place of the hero
               image, and the image becomes its poster.
+            </p>
+          </section>
+
+          <section className="border border-[#2a2a27] bg-[#111110] p-6">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#D6FF4B]">App preview</h2>
+            <label className={labelCls}>Preview page (optional)</label>
+            <input
+              className={inputCls}
+              value={p.previewUrl || ""}
+              onChange={(e) => patch({ previewUrl: e.target.value })}
+              placeholder="/previews/my-app/index.html"
+            />
+            <label className={`${labelCls} mt-5`}>Show it in</label>
+            <select
+              className={inputCls}
+              value={p.previewDevice === "browser" ? "browser" : "phone"}
+              onChange={(e) => patch({ previewDevice: e.target.value })}
+            >
+              <option value="phone">A phone (mobile apps)</option>
+              <option value="browser">A browser window (web apps)</option>
+            </select>
+            <p className="mt-2 text-xs text-[#5b5b56]">
+              For apps that aren&apos;t hosted anywhere: put a static web build in public/previews/&lt;name&gt;/,
+              deploy, then link its page here. Visitors get a &quot;Launch the app&quot; button on the project page.
             </p>
           </section>
         </div>
