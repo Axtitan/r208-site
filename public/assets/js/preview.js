@@ -18,6 +18,32 @@
     window.addEventListener("resize", function () { boxes.forEach(fit); });
   }
 
+  // Desktop apps in the browser frame need a laptop-sized window. When the
+  // slot is narrower than that (phones, small tablets), the app renders at
+  // DESK_W and is scaled down to fit instead of reflowing into a broken layout.
+  var DESK_W = 1024;
+  function fitDesk(screen) {
+    var w = screen.clientWidth, h = screen.clientHeight;
+    if (!w || w >= DESK_W) {
+      screen.classList.remove("ap-screen--scaled");
+      return;
+    }
+    var k = w / DESK_W;
+    screen.classList.add("ap-screen--scaled");
+    screen.style.setProperty("--ap-k", String(k));
+    screen.style.setProperty("--ap-vh", Math.round(h / k) + "px");
+  }
+  var desks = document.querySelectorAll(".app-preview--browser .ap-screen");
+  if ("ResizeObserver" in window) {
+    var dro = new ResizeObserver(function (entries) {
+      entries.forEach(function (e) { fitDesk(e.target); });
+    });
+    desks.forEach(function (d) { dro.observe(d); });
+  } else {
+    desks.forEach(fitDesk);
+    window.addEventListener("resize", function () { desks.forEach(fitDesk); });
+  }
+
   // Status bar and home indicator take the app's own colour, read from the
   // theme-color meta in the preview's index.html.
   function setColours(screen, bg) {
