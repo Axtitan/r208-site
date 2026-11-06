@@ -36,9 +36,10 @@ export const SEED_TESTIMONIALS = [
 
 export const TEAM = [
   { name: "Terence", role: "Founder / Design & Build", bio: "Sets the standard, runs the room, still writes code on every project." },
-  { name: "Open Seat", role: "Product Designer", bio: "For someone who thinks in systems and argues about spacing." },
+  { name: "Agyo Michael", role: "Mobile App Developer / Agentic AI Scripting", bio: "Building mobile and web apps since 2019. Proudest build: the blood donation app made for an undergraduate student." },
+  { name: "Favour Wright Dickson", role: "Product Designer / Web Designer", bio: "Designs and builds digital products, from UI and UX in Figma and Adobe XD to WordPress websites." },
+  { name: "Joseph “Kotan” Tanko", role: "Music Producer / 3D & Digital Artist / Full-Stack Developer", bio: "Hip-hop and trap producer, computer graphics artist, and full-stack developer building a music and lyric writing app in Flutter." },
   { name: "Open Seat", role: "Security Engineer", bio: "For someone who breaks things carefully and documents it well." },
-  { name: "Open Seat", role: "Motion & 3D", bio: "For someone who can make a still frame feel like it is about to move." },
 ];
 
 type SeedProject = {
