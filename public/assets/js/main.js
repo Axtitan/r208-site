@@ -230,6 +230,28 @@ document.querySelectorAll('.testi-slider').forEach(function(sl){
   show(0);play();
 });
 
+/* team slider (About) — native horizontal scroll with snap; buttons step one card */
+document.querySelectorAll('.team-slider').forEach(function(sl){
+  var tr=sl.querySelector('.team-track');if(!tr)return;
+  var cards=tr.children,n=cards.length,pv=sl.querySelector('.t-prev'),nx=sl.querySelector('.t-next'),
+      cnt=sl.querySelector('.t-count'),bar=sl.querySelector('.team-progress i');
+  function pad(i){return (i<10?'0':'')+i;}
+  function step(){return cards[0].getBoundingClientRect().width+(parseFloat(getComputedStyle(tr).columnGap)||0);}
+  function upd(){
+    var st=step(),max=tr.scrollWidth-tr.clientWidth,first=Math.round(tr.scrollLeft/st),
+        vis=Math.max(1,Math.round((tr.clientWidth+(parseFloat(getComputedStyle(tr).columnGap)||0))/st)),
+        last=Math.min(n,first+vis);
+    if(cnt)cnt.textContent=(vis>1?pad(first+1)+'–'+pad(last):pad(first+1))+' / '+pad(n);
+    if(pv)pv.disabled=tr.scrollLeft<4;if(nx)nx.disabled=tr.scrollLeft>max-4;
+    if(bar){var r=tr.clientWidth/tr.scrollWidth;bar.style.transform='scaleX('+(r+(1-r)*(max>0?tr.scrollLeft/max:1))+')';}
+  }
+  function go(d){tr.scrollBy({left:d*step(),behavior:RM?'auto':'smooth'});}
+  if(pv)pv.addEventListener('click',function(){go(-1);});
+  if(nx)nx.addEventListener('click',function(){go(1);});
+  tr.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);
+  upd();
+});
+
 /* custom dropdown */
 document.querySelectorAll('.sel').forEach(function(sel){
   var btn=sel.querySelector('.sel-btn'),val=sel.querySelector('.sel-val'),inp=sel.querySelector('input[type="hidden"]');
