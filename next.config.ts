@@ -146,6 +146,12 @@ const nextConfig: NextConfig = {
         source: "/api/admin/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
+      {
+        // three.js for the Room page lives in a versioned folder, so browsers
+        // can keep it for a year; a new version gets a new folder.
+        source: "/assets/vendor/three-0.160/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
     ];
   },
 };
