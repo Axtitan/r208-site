@@ -1,5 +1,5 @@
 /* Room 208: the 3D room with the team in it (three.js 0.160.0, self-hosted). */
-import * as THREE from '../vendor/three-0.160/three.module.js';
+import * as THREE from '../vendor/three-0.160/three.module.min.js';
 import { OrbitControls } from '../vendor/three-0.160/OrbitControls.js';
 import { RoundedBoxGeometry } from '../vendor/three-0.160/RoundedBoxGeometry.js';
 import { mergeVertices } from '../vendor/three-0.160/BufferGeometryUtils.js';
@@ -84,10 +84,13 @@ try {
   $('loader').querySelector('span').textContent = 'This device can’t show 3D. The people list below still works.';
   throw e;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// phones and tablets: fewer pixels and cheaper shadows; quality() lowers it further if frames run slow
+const LITE = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600;
+let pixelRatio = Math.min(devicePixelRatio, LITE ? 1.5 : 2);
+renderer.setPixelRatio(pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = LITE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -217,7 +220,7 @@ const hemi = new THREE.HemisphereLight(0x6d7fa8, 0x2a2118, 1.0); scene.add(hemi)
 const fill = new THREE.DirectionalLight(0xffe3c8, .55); fill.position.set(6,5,7); scene.add(fill);
 const moon = new THREE.DirectionalLight(0x9db2ff, 1.1);
 moon.position.set(1.1, 4.2, -7.5); moon.target.position.set(.2,0,-.6);
-moon.castShadow = true; moon.shadow.mapSize.set(1024,1024);
+moon.castShadow = true; moon.shadow.mapSize.setScalar(LITE ? 512 : 1024);
 Object.assign(moon.shadow.camera, { left:-4, right:4, top:4, bottom:-4, near:1, far:16 });
 moon.shadow.bias = -.0008; scene.add(moon, moon.target);
 const ceiling = new THREE.PointLight(0xfff0d8, 0, 0, 2); ceiling.position.set(0,2.6,0); scene.add(ceiling);
@@ -1077,8 +1080,22 @@ const v3 = new THREE.Vector3();
 const clk = new THREE.Clock();
 let screenAcc = 0;
 
+// watch the frame time; if the device struggles, render fewer pixels, then drop the shadow
+const perf = { n:0, sum:0, skip:90 };
+function quality(raw){
+  if (perf.skip > 0){ perf.skip--; return; }            // first frames include shader compiles
+  if (raw > .25 || document.hidden) return;             // tab switches, not real frames
+  perf.sum += raw; perf.n++;
+  if (perf.n < 60) return;
+  const avg = perf.sum/perf.n; perf.sum = 0; perf.n = 0;
+  if (avg < 1/40) return;                                // 40fps or better: leave it
+  if (pixelRatio > 1){ pixelRatio = Math.max(1, pixelRatio - .25); renderer.setPixelRatio(pixelRatio); renderer.setSize(innerWidth, innerHeight); perf.skip = 30; }
+  else if (moon.castShadow){ moon.castShadow = false; perf.skip = 90; }
+}
 function animate(){
-  const dt = Math.min(clk.getDelta(), .05) * SPEED;
+  const raw = clk.getDelta();
+  quality(raw);
+  const dt = Math.min(raw, .05) * SPEED;
   clockT += dt; const t = clockT;
 
   // gamer
