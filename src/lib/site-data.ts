@@ -39,7 +39,9 @@ export const TEAM = [
   { name: "Agyo Michael", role: "Mobile App Developer / Agentic AI Scripting", bio: "Building mobile and web apps since 2019. Proudest build: the blood donation app made for an undergraduate student." },
   { name: "Favour Wright Dickson", role: "Product Designer / Web Designer", bio: "Designs and builds digital products, from UI and UX in Figma and Adobe XD to WordPress websites." },
   { name: "Joseph “Kotan” Tanko", role: "Music Producer / 3D & Digital Artist / Full-Stack Developer", bio: "Hip-hop and trap producer, computer graphics artist, and full-stack developer building a music and lyric writing app in Flutter." },
-  { name: "Open Seat", role: "Security Engineer", bio: "For someone who breaks things carefully and documents it well." },
+  { name: "Joshua “Cereal” Onu", role: "Full-Stack Developer", bio: "Builds scalable fintech systems, secure backend architectures and cross-platform mobile apps with Node.js and React Native." },
+  { name: "Okereke Vincent “Will” Princewill", role: "Full-Stack Developer / Digital Artist", bio: "Backend-focused engineer building APIs and distributed systems in Go, Python and Rust, and a digital artist on the side." },
+  { name: "Gbolahan Adeola", role: "Penetration Tester", bio: "Tests web APIs and Android apps for security weaknesses, and writes reports developers can act on fast." },
 ];
 
 type SeedProject = {

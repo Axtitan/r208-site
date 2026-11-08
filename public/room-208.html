@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Room 208</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+html, body { margin:0; height:100%; overflow:hidden; }
+/* Layout: a full-bleed 3D diorama; UI sits in the corners like labels on a model box. Single dark look, R208 brand tokens. */
+:root{
+  --ink:#0B0B0A; --ink-2:#141412; --ink-3:#1D1D1A;
+  --paper:#F4F2EE; --steel:#8A8880; --signal:#D6FF4B;
+  --line:rgba(244,242,238,.14); --line-strong:rgba(244,242,238,.28);
+  --glass:rgba(20,20,18,.86);
+  --f-display:'Space Grotesk','Geist',system-ui,sans-serif;
+  --f-body:'Geist','Inter',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--paper);font-family:var(--f-body);overflow:hidden;-webkit-font-smoothing:antialiased}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+.top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none;z-index:5}
+.top > *{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{display:grid;grid-template-columns:repeat(3,7px);gap:2px}
+.mark i{width:7px;height:7px;background:var(--paper);display:block}
+.mark i:nth-child(3){background:var(--signal)}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:-.01em;line-height:1;margin:0}
+.brand p{margin:3px 0 0;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel)}
+.tag{display:inline-block;margin-left:6px;padding:1px 6px;border:1px solid var(--line-strong);border-radius:99px;color:var(--signal);font-size:9.5px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.tool{background:var(--glass);border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:7px;backdrop-filter:blur(8px)}
+.tool:hover{border-color:var(--line-strong)}
+.tool .dot{width:7px;height:7px;border-radius:50%;background:var(--steel)}
+.tool[aria-pressed="true"] .dot{background:var(--signal);box-shadow:0 0 8px var(--signal)}
+
+.bottom{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none;z-index:5}
+.bottom > *{pointer-events:auto}
+.roster{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:10px 12px;backdrop-filter:blur(8px);min-width:0;max-width:100%}
+.roster h2{margin:0 0 8px;font-family:var(--f-mono);font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel)}
+.roster ul{list-style:none;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:8px;background:var(--ink-3);border:1px solid var(--line);border-radius:99px;padding:5px 11px 5px 5px;cursor:pointer;font-size:13px;white-space:nowrap}
+.chip:hover,.chip[aria-current="true"]{border-color:var(--signal)}
+.chip .face{width:20px;height:20px;border-radius:50%;flex:none;border:2px solid var(--ink)}
+.hint{font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;color:var(--steel);text-align:right;max-width:260px;line-height:1.5;transition:opacity .6s}
+.hint b{color:var(--paper);font-weight:500}
+.hint.gone{opacity:0}
+
+.card{position:fixed;z-index:6;top:calc(76px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));width:min(360px,calc(100% - 32px));
+  background:var(--glass);border:1px solid var(--line-strong);border-radius:18px;padding:20px 20px 18px;backdrop-filter:blur(14px);box-shadow:0 20px 60px rgba(0,0,0,.5);
+  animation:cardIn .35s cubic-bezier(.22,1,.36,1)}
+@keyframes cardIn{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.card .x{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:16px;line-height:1}
+.card .x:hover{border-color:var(--paper)}
+.eyebrow{margin:0;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal)}
+.card h2{margin:8px 0 2px;font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:-.02em;line-height:1.05;text-wrap:balance;padding-right:30px}
+.role{margin:0 0 14px;color:var(--steel);font-size:13.5px}
+.where{margin:0 0 12px;padding:10px 12px;border-left:2px solid var(--signal);background:rgba(214,255,75,.06);border-radius:0 8px 8px 0;font-size:14px;line-height:1.5}
+.where span{display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);margin-bottom:2px}
+.body{margin:0;font-size:14px;line-height:1.6;color:#d9d6cf}
+.btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:var(--signal);color:var(--ink);text-decoration:none;font-weight:500;font-size:13.5px;padding:9px 14px;border-radius:99px}
+.btn:hover{filter:brightness(1.08)}
+.more{margin:12px 0 0;font-size:13.5px;line-height:1.5;color:#d9d6cf}
+.more span{display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal);margin-bottom:3px}
+.more em{font-style:normal}
+.links{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.links a{display:inline-flex;align-items:center;font-family:var(--f-mono);font-size:11.5px;color:var(--paper);text-decoration:none;border:1px solid var(--line-strong);border-radius:99px;padding:6px 11px;transition:background .2s,border-color .2s,color .2s}
+.links a:hover,.links a:focus-visible{background:var(--signal);border-color:var(--signal);color:var(--ink)}
+.links a.proj{border-color:var(--signal);color:var(--signal)}
+.links a.proj:hover{color:var(--ink)}
+
+.tip{position:fixed;z-index:7;pointer-events:none;background:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:5px 9px;font-family:var(--f-mono);font-size:11.5px;white-space:nowrap;transform:translate(14px,14px)}
+.tip small{color:var(--signal);margin-left:6px}
+.toast{position:fixed;z-index:8;left:50%;top:calc(76px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);border:1px solid var(--signal);color:var(--paper);border-radius:99px;padding:8px 16px;font-family:var(--f-mono);font-size:12px;white-space:nowrap;animation:cardIn .25s ease-out}
+
+.loader{position:fixed;inset:0;z-index:20;background:var(--ink);display:grid;place-items:center;transition:opacity .8s}
+.loader.done{opacity:0;pointer-events:none}
+.loader div{text-align:center}
+.loader b{display:block;font-family:var(--f-display);font-size:64px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.loader b em{font-style:normal;color:var(--signal)}
+.loader span{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel)}
+
+@media (max-width:640px){
+  .card{top:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));width:auto;max-height:60%;overflow:auto}
+  .hint{display:none}
+  .brand p{display:none}
+  .roster ul{flex-wrap:nowrap;overflow-x:auto}
+  .tool .lbl{display:none}
+  .tool{padding:8px 10px}
+}
+</style>
+</head>
+<body>
+<div id="stage" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="brand">
+    <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div>
+      <h1>The Room</h1>
+      <p>Room 208 · after hours <span class="tag">proof of concept</span></p>
+    </div>
+  </div>
+  <div class="tools">
+    <button class="tool" id="lightsBtn" aria-pressed="false" title="Ceiling light"><span class="dot"></span><span class="lbl">Lights</span></button>
+    <button class="tool" id="resetBtn" title="Back to the full room"><span class="lbl">Reset view</span><span aria-hidden="true">↺</span></button>
+  </div>
+</header>
+
+<footer class="bottom">
+  <nav class="roster" aria-label="People in the room">
+    <h2>In the room</h2>
+    <ul id="roster"></ul>
+  </nav>
+  <p class="hint" id="hint"><b>Drag</b> to look around · <b>scroll</b> to zoom<br><b>Click</b> people and things in the room</p>
+</footer>
+
+<aside class="card" id="card" hidden aria-live="polite">
+  <button class="x" id="cardClose" aria-label="Close">✕</button>
+  <p class="eyebrow" id="cEyebrow"></p>
+  <h2 id="cTitle"></h2>
+  <p class="role" id="cRole"></p>
+  <p class="where" id="cWhere"><span>Usually found</span><em id="cWhereText"></em></p>
+  <p class="body" id="cBody"></p>
+  <p class="more" id="cMore" hidden><span>Off the clock</span><em id="cMoreText"></em></p>
+  <ul class="links" id="cLinks" hidden></ul>
+  <a class="btn" id="cLink" target="_blank" rel="noopener" hidden></a>
+</aside>
+
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<div class="loader" id="loader"><div><b>R<em>2</em>08</b><span>Unlocking the room</span></div></div>
+<script type="module" src="assets/js/room-208.js"></script>
+</body>
+</html>
