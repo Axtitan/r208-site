@@ -3,6 +3,7 @@ import * as THREE from '../vendor/three-0.160/three.module.min.js';
 import { OrbitControls } from '../vendor/three-0.160/OrbitControls.js';
 import { RoundedBoxGeometry } from '../vendor/three-0.160/RoundedBoxGeometry.js';
 import { mergeVertices } from '../vendor/three-0.160/BufferGeometryUtils.js';
+import { GLTFLoader } from '../vendor/three-0.160/GLTFLoader.js';
 
 // canvas textures use the brand fonts, so wait for them (briefly) before drawing
 await Promise.race([
@@ -13,6 +14,11 @@ await Promise.race([
 /* ---------- people: R208 members (bios from their bio templates) ---------- */
 const SITE = 'https://r208-site.vercel.app';
 const PEOPLE = [
+  { id:'founder', name:'Terence', full:'Terence', role:'Founder · Design & Build', glb:'assets/models/terence.glb',
+    where:'By the fridge, hands in pockets, watching the room work.',
+    body:'Sets the standard, runs the room, still writes code on every project.',
+    says:'looks good. ship it.',
+    look:{ skin:0x8a5638, hair:0x15120f } },
   { id:'pacer', name:'Michael', full:'Agyo Michael', role:'Mobile App Developer · Agentic AI Scripting',
     where:'Pacing the room, solving a Rubik’s cube. Doesn’t look up until it’s done.',
     body:'Building mobile and web apps since 2019. Proudest build: the blood donation app made for an undergraduate student.',
@@ -868,6 +874,28 @@ function drawSketch(){
   }
   g.stroke(); f.pageT.tex.needsUpdate = true;
 }
+// Terence: a rigged model built in Blender, with its own animation clips (Idle, Walk, Wave)
+{
+  const p = P('founder');
+  try {
+    const gltf = await new GLTFLoader().loadAsync(p.glb);
+    const root = new THREE.Group(), model = gltf.scene; root.add(model);
+    model.scale.setScalar(.74);                 // the model is 1.8 tall; the room's figures are about 1.3
+    // the sweater's knit ribs are drawn here, so the model file carries no images
+    const rib = canvasTex(128,4,(g,w,h)=>{ for (let x=0;x<w;x++){ const k = .84 + .16*Math.pow(.5 + .5*Math.cos(x/w*Math.PI*2*12), .7);
+      g.fillStyle = `rgb(${134*k|0},${131*k|0},${127*k|0})`; g.fillRect(x,0,1,h); } }).tex;
+    rib.wrapS = rib.wrapT = THREE.RepeatWrapping; rib.needsUpdate = true;
+    model.traverse(o=>{ if (!o.isMesh) return; o.castShadow = o.receiveShadow = true; o.frustumCulled = false;
+      if (o.material.name === 'r208_sweater'){ o.material.map = rib; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
+    root.position.set(1.5, 0, -1.5); root.rotation.y = .35;
+    const mixer = new THREE.AnimationMixer(model), act = {};
+    for (const c of gltf.animations) act[c.name] = mixer.clipAction(c);
+    act.Idle.play();
+    mixer.addEventListener('finished', ()=>{ act.Idle.reset().play(); act.Wave.crossFadeTo(act.Idle, .3, false); });
+    figs.founder = { root, head:model.getObjectByName('head'), lookW:0, glb:true, mixer, act, waved:false };
+    room.add(root);
+  } catch (e) { console.warn('Terence model did not load', e); PEOPLE.splice(PEOPLE.indexOf(p), 1); }
+}
 for (const p of PEOPLE){ if (p.says){ figs[p.id].bubble = makeBubble(p.says); room.add(figs[p.id].bubble); } }
 
 /* ---------- dust in the air ---------- */
@@ -940,7 +968,7 @@ function register(entry, objects){
 function hitBox(w,h,d,x,y,z,parent=room){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshBasicMaterial({ visible:false })); m.position.set(x,y,z); parent.add(m); return m; }
 
 const people = PEOPLE.map(p => register({ kind:'person', ...p, fig:figs[p.id], label:p.name }, [figs[p.id].root]));
-const FOCUS = { gamer:[1.55,.55,-.75], sleeper:[1.9,1.1,.9], scroller:[1.55,.25,1.45], pacer:[1.35,.3,1.15], producer:[1.35,.35,.45], gardener:[.75,.35,1.3], artist:[.7,.45,1.25] };
+const FOCUS = { gamer:[1.55,.55,-.75], sleeper:[1.9,1.1,.9], scroller:[1.55,.25,1.45], pacer:[1.35,.3,1.15], founder:[.6,.3,1.55], producer:[1.35,.35,.45], gardener:[.75,.35,1.3], artist:[.7,.45,1.25] };
 
 register({ kind:'item', label:'Gaming laptop', title:'Gaming laptop', eyebrow:'Object · desk',
   body:'In the full version, laptops open R208 projects. This one would play the Stealth Assist explainer.',
@@ -1211,11 +1239,18 @@ function animate(){
     f.pupils.position.set(0, up > .2 ? .004 : -.006, 0);
     if (draw > .5) drawSketch();
   }
+  // Terence: clip-driven. Waves once when clicked; his head turns to the camera
+  if (figs.founder){ const f = figs.founder, on = !!active && active.id === 'founder';
+    if (on && !f.waved){ const w = f.act.Wave; w.reset().setLoop(THREE.LoopOnce, 1); w.clampWhenFinished = true; w.play(); f.act.Idle.crossFadeTo(w, .25, false); }
+    f.waved = on;
+    f.mixer.update(dt);
+    if (f.lookW > .001){ v3.copy(camera.position); f.root.worldToLocal(v3); f.head.rotateY(THREE.MathUtils.clamp(Math.atan2(v3.x, v3.z), -.9, .9)*f.lookW*.85); }
+  }
   // the person you clicked turns to look at you and says their line
   for (const p of people){
     const f = p.fig;
     f.lookW += ((active === p ? 1 : 0) - f.lookW) * Math.min(1, dt*3);
-    if (p.id !== 'sleeper' && f.lookW > .001){
+    if (p.id !== 'sleeper' && !f.glb && f.lookW > .001){
       v3.copy(camera.position); f.neck.worldToLocal(v3); v3.y -= .17;
       const yaw = THREE.MathUtils.clamp(Math.atan2(v3.x, v3.z), -.8, .8);
       const pitch = THREE.MathUtils.clamp(-Math.atan2(v3.y, Math.hypot(v3.x, v3.z)), -.5, .35);
