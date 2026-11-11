@@ -3,7 +3,7 @@ import * as THREE from '../vendor/three-0.160/three.module.min.js';
 import { OrbitControls } from '../vendor/three-0.160/OrbitControls.js';
 import { RoundedBoxGeometry } from '../vendor/three-0.160/RoundedBoxGeometry.js';
 import { mergeVertices } from '../vendor/three-0.160/BufferGeometryUtils.js';
-import { GLTFLoader } from '../vendor/three-0.160/GLTFLoader.js';
+import { buildTerence } from './figure-terence.js';
 
 // canvas textures use the brand fonts, so wait for them (briefly) before drawing
 await Promise.race([
@@ -14,7 +14,7 @@ await Promise.race([
 /* ---------- people: R208 members (bios from their bio templates) ---------- */
 const SITE = 'https://r208-site.vercel.app';
 const PEOPLE = [
-  { id:'founder', name:'Terence', full:'Terence', role:'Founder · Design & Build', glb:'assets/models/terence.glb',
+  { id:'founder', name:'Terence', full:'Terence', role:'Founder · Design & Build',
     where:'By the fridge, hands in pockets, watching the room work.',
     body:'Sets the standard, runs the room, still writes code on every project.',
     says:'looks good. ship it.',
@@ -874,27 +874,17 @@ function drawSketch(){
   }
   g.stroke(); f.pageT.tex.needsUpdate = true;
 }
-// Terence: a rigged model built in Blender, with its own animation clips (Idle, Walk, Wave)
+// Terence: the cartoon figure from his character sheet (figure-terence.js), with its own clips (Idle, Walk, Wave) and blinking
 {
-  const p = P('founder');
-  try {
-    const gltf = await new GLTFLoader().loadAsync(p.glb);
-    const root = new THREE.Group(), model = gltf.scene; root.add(model);
-    model.scale.setScalar(.74);                 // the model is 1.8 tall; the room's figures are about 1.3
-    // the sweater's knit ribs are drawn here, so the model file carries no images
-    const rib = canvasTex(128,4,(g,w,h)=>{ for (let x=0;x<w;x++){ const k = .84 + .16*Math.pow(.5 + .5*Math.cos(x/w*Math.PI*2*12), .7);
-      g.fillStyle = `rgb(${134*k|0},${131*k|0},${127*k|0})`; g.fillRect(x,0,1,h); } }).tex;
-    rib.wrapS = rib.wrapT = THREE.RepeatWrapping; rib.needsUpdate = true;
-    model.traverse(o=>{ if (!o.isMesh) return; o.castShadow = o.receiveShadow = true; o.frustumCulled = false;
-      if (o.material.name === 'r208_sweater'){ o.material.map = rib; o.material.color.set(0xffffff); o.material.needsUpdate = true; } });
-    root.position.set(1.5, 0, -1.5); root.rotation.y = .35;
-    const mixer = new THREE.AnimationMixer(model), act = {};
-    for (const c of gltf.animations) act[c.name] = mixer.clipAction(c);
-    act.Idle.play();
-    mixer.addEventListener('finished', ()=>{ act.Idle.reset().play(); act.Wave.crossFadeTo(act.Idle, .3, false); });
-    figs.founder = { root, head:model.getObjectByName('head'), lookW:0, glb:true, mixer, act, waved:false };
-    room.add(root);
-  } catch (e) { console.warn('Terence model did not load', e); PEOPLE.splice(PEOPLE.indexOf(p), 1); }
+  const t = buildTerence(), root = new THREE.Group(); root.add(t.root);
+  t.root.scale.setScalar(.76);                  // he is 1.75 tall; the room's figures are about 1.3
+  t.root.traverse(o=>{ if (o.isMesh){ o.castShadow = o.material.side !== THREE.BackSide; o.frustumCulled = false; } });
+  root.position.set(1.5, 0, -1.5); root.rotation.y = .35;
+  const { mixer, act } = t;
+  act.Idle.play();
+  mixer.addEventListener('finished', ()=>{ act.Idle.reset().play(); act.Wave.crossFadeTo(act.Idle, .3, false); });
+  figs.founder = { root, head:t.head, lookW:0, glb:true, mixer, act, tick:t.tick, waved:false };
+  room.add(root);
 }
 for (const p of PEOPLE){ if (p.says){ figs[p.id].bubble = makeBubble(p.says); room.add(figs[p.id].bubble); } }
 
@@ -1243,7 +1233,7 @@ function animate(){
   if (figs.founder){ const f = figs.founder, on = !!active && active.id === 'founder';
     if (on && !f.waved){ const w = f.act.Wave; w.reset().setLoop(THREE.LoopOnce, 1); w.clampWhenFinished = true; w.play(); f.act.Idle.crossFadeTo(w, .25, false); }
     f.waved = on;
-    f.mixer.update(dt);
+    f.mixer.update(dt); f.tick(dt);
     if (f.lookW > .001){ v3.copy(camera.position); f.root.worldToLocal(v3); f.head.rotateY(THREE.MathUtils.clamp(Math.atan2(v3.x, v3.z), -.9, .9)*f.lookW*.85); }
   }
   // the person you clicked turns to look at you and says their line
