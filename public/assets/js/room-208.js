@@ -14,10 +14,13 @@ await Promise.race([
 /* ---------- people: R208 members (bios from their bio templates) ---------- */
 const SITE = 'https://r208-site.vercel.app';
 const PEOPLE = [
-  { id:'founder', name:'Terence', full:'Terence', role:'Founder · Design & Build',
+  { id:'founder', name:'Terence', full:'Terence Bentem', role:'Founder · Web Designer & Developer',
     where:'By the fridge, hands in pockets, watching the room work.',
-    body:'Sets the standard, runs the room, still writes code on every project.',
+    body:'Computer Engineer by training, web designer and developer by trade. Builds in HTML, CSS, JavaScript and Next.js, and on WordPress. Two years of designing in Figma, with AI in the workflow to automate the boring parts.',
+    off:'EA Sports FC, NBA 2K and other games on weekends, chess now and then, long walks. Into philosophy, theology, tech and anime.',
     says:'looks good. ship it.',
+    links:[ ['LinkedIn','https://www.linkedin.com/in/terence-bentem-gmnse-428715223/'], ['GitHub','https://github.com/Axtitan/'],
+            ['Dribbble','https://dribbble.com/Axtitan'], ['Portfolio','https://terencebentem.xyz/'] ],
     look:{ skin:0x8a5638, hair:0x15120f } },
   { id:'pacer', name:'Michael', full:'Agyo Michael', role:'Mobile App Developer · Agentic AI Scripting',
     where:'Pacing the room, solving a Rubik’s cube. Doesn’t look up until it’s done.',
@@ -66,6 +69,21 @@ const PEOPLE = [
     says:'just one more scroll…',
     links:[ ['LinkedIn','https://www.linkedin.com/in/gbolahan-adeola-2718b1387'] ],
     look:{ skin:0x5e3a26, hair:0x0c0a09, hairStyle:'buzz', expr:'smile', brows:'bold', nose:1.05, eyes:0x2e1c10, top:0x2b2f36, bottom:0x3b4a5c, shoe:0xd6ff4b, hood:true } },
+  { id:'shooter', name:'Dewan', full:'Dewan Rotshak', role:'Brand Designer',
+    where:'Standing over the pizza box, camera out, shooting it for a mood board.',
+    body:'Three years of brand design, treated as the problem of representation: not just a good-looking identity, but the design a brand actually needs to stand out in its market.',
+    off:'Video games, football, cooking and exploring new places. Into content creation, photography, illustration and art.',
+    says:'hold on, the lighting is perfect',
+    links:[ ['LinkedIn','https://www.linkedin.com/in/rotshak-dewan-24b18037b/'], ['Instagram','https://www.instagram.com/dewan_3d/'],
+            ['GitHub','https://github.com/Dewan3d'], ['Behance','https://www.behance.net/sharkimagery_designs'] ],
+    look:{ skin:0x7a4a2e, hair:0x0e0c0b, hairStyle:'short', expr:'smile', brows:'bold', nose:1.0, eyes:0x2e1c10, top:0x2f6f73, bottom:0x2a2c31, shoe:0xf2f0ea, hood:true } },
+  { id:'chess', name:'Ebunrere', full:'Ebunrere Adebanjo', role:'Full-Stack Developer · Sales',
+    where:'Cross-legged on the floor, playing both sides of a chess game. Still losing.',
+    body:'Five years in software development and one in sales. Builds web and mobile products across backend systems, cloud and DevOps. Built the Lantees Cafe website and Crabble Club, worked with LEDVenture on mobile and web apps, and founded a startup.',
+    off:'Running, chess and strategy games. Into AI, startups, fintech, game theory and systems thinking.',
+    says:'checkmate… against myself',
+    links:[ ['LinkedIn','https://www.linkedin.com/in/ebunrere/'], ['GitHub','https://github.com/Dedigraz'] ],
+    look:{ skin:0x6b4129, hair:0x0d0b0a, hairStyle:'buzz', expr:'smile', brows:'soft', nose:1.0, eyes:0x2b1a10, top:0xdcd6c8, blazer:0x34404f, bottom:0x2b2d33, shoe:0xd6ff4b } },
   { id:'sleeper', name:'The Sleeper', placeholder:true, role:'Placeholder · saved for the next bio',
     where:'Top bunk. Asleep since the second episode.',
     body:'This bunk is saved for the next member. Each one gets a figure styled after them and an activity that fits how they spent time in the room.',
@@ -874,6 +892,56 @@ function drawSketch(){
   }
   g.stroke(); f.pageT.tex.needsUpdate = true;
 }
+// Dewan: standing over the pizza, shooting it with a flash camera
+const DEW = { x:.02, z:-.1 };
+{
+  const f = makeFigure(P('shooter').look); figs.shooter = f;
+  f.root.position.set(DEW.x, PACE.stand, DEW.z);
+  f.root.rotation.y = Math.atan2(pizza.position.x - DEW.x, pizza.position.z - DEW.z);
+  f.base = { sh:-.7, el:-1.5 };
+  f.L.sh.rotation.set(f.base.sh,0,-.3); f.R.sh.rotation.set(f.base.sh,0,.3);
+  f.L.el.rotation.set(f.base.el,0,-.5); f.R.el.rotation.set(f.base.el,0,.5);
+  f.spine.rotation.x = .1; f.neck.rotation.x = .3;
+  const cam = new THREE.Group(); cam.position.set(0,.34,.31); cam.rotation.x = .55; f.spine.add(cam); f.cam = cam;
+  const bodyM = mat(0x1a1a1c,{ roughness:.45 }), lensM = mat(0x0c0c0d,{ roughness:.25, metalness:.4 });
+  cam.add(at(box(.13,.08,.05,bodyM,.012), 0,0,0), at(box(.04,.02,.03,bodyM,.006), -.035,.05,0));
+  const lens = cyl(.026,.03,.05,lensM,18); lens.rotation.x = Math.PI/2; lens.position.set(.015,0,.045); cam.add(lens);
+  const glass = cyl(.02,.02,.004,glow(0x223344),16); glass.rotation.x = Math.PI/2; glass.position.set(.015,0,.071); cam.add(glass);
+  const flashM = new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0, toneMapped:false });
+  f.flashBulb = at(new THREE.Mesh(new THREE.PlaneGeometry(.035,.016), flashM), -.035,.05,.0155); cam.add(f.flashBulb);
+  f.flash = new THREE.PointLight(0xfff6e8, 0, 2.6, 2); f.flash.position.set(0,0,.09); cam.add(f.flash);
+  f.nextShot = 2.5; f.shotAt = -9;
+  room.add(f.root);
+}
+// Ebunrere: cross-legged on the floor, playing both sides of a chess game
+const CHESS = { x:.55, z:1.35, yaw:.63 };
+{
+  const f = makeFigure(P('chess').look); figs.chess = f;
+  f.root.position.set(CHESS.x, .1, CHESS.z); f.root.rotation.y = CHESS.yaw;
+  for (const [l,s] of [[f.LL,1],[f.RL,-1]]){
+    l.hp.rotation.order = 'YXZ'; l.hp.rotation.set(-1.45, s*.62, 0);
+    l.kn.rotation.order = 'ZXY'; l.kn.rotation.set(.25, 0, -s*2.35);
+  }
+  f.spine.rotation.x = .22;
+  f.base = { neck:.58, sh:-.55, el:-.75 };
+  f.neck.rotation.x = f.base.neck;
+  f.L.sh.rotation.set(-.45,0,-.35); f.L.el.rotation.set(-.55,0,0);
+  f.R.sh.rotation.set(f.base.sh,0,.2); f.R.el.rotation.set(f.base.el,0,0);
+  const board = new THREE.Group(); board.position.set(CHESS.x + Math.sin(CHESS.yaw)*.4, .004, CHESS.z + Math.cos(CHESS.yaw)*.4); board.rotation.y = CHESS.yaw; room.add(board);
+  const bt = canvasTex(128,128,(g)=>{ for (let i=0;i<8;i++) for (let j=0;j<8;j++){ g.fillStyle = (i+j)%2 ? '#5b4636' : '#e8dcc4'; g.fillRect(i*16,j*16,16,16); } });
+  board.add(at(box(.34,.018,.34,mat(0x3a2a1f,{ roughness:.6 }),.006), 0,.009,0));
+  const top = new THREE.Mesh(new THREE.PlaneGeometry(.3,.3), mat(0xffffff,{ map:bt.tex, roughness:.5 })); top.rotation.x = -Math.PI/2; top.position.y = .0185; top.receiveShadow = true; board.add(top);
+  const sq = (i,j) => new THREE.Vector3((i - 3.5)*.0375, .0185, (j - 3.5)*.0375);
+  const wM = mat(0xf2ede2,{ roughness:.35 }), kM = mat(0x161618,{ roughness:.3 });
+  const piece = (m, tall) => { const p = new THREE.Group(); p.add(at(cyl(.011,.014,.008,m,12), 0,.004,0), at(cyl(.006,.01,tall,m,12), 0,.008 + tall/2,0), at(sph(.009,m,10,8), 0,.012 + tall,0)); return p; };
+  const set = [[wM,.022,1,1],[wM,.03,3,0],[wM,.018,4,2],[wM,.022,6,1],[kM,.022,2,6],[kM,.03,4,7],[kM,.018,3,5],[kM,.022,5,6],[kM,.026,6,5]];
+  f.pieces = set.map(([m,tall,i,j])=>{ const p = piece(m,tall); p.position.copy(sq(i,j)); board.add(p); return p; });
+  // moves played in turn, white then black; then the game resets
+  f.moves = [[2,[4,3]],[6,[3,4]],[1,[3,3]],[4,[2,4]],[3,[5,3]],[8,[5,4]],[1,[3,5]]].map(([k,[i,j]])=>({ k, to:sq(i,j) }));
+  f.home = f.pieces.map(p=>p.position.clone());
+  f.game = { n:0, t0:-9, from:null };
+  room.add(f.root);
+}
 // Terence: the cartoon figure from his character sheet (figure-terence.js), with its own clips (Idle, Walk, Wave) and blinking
 {
   const t = buildTerence(), root = new THREE.Group(); root.add(t.root);
@@ -958,7 +1026,7 @@ function register(entry, objects){
 function hitBox(w,h,d,x,y,z,parent=room){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshBasicMaterial({ visible:false })); m.position.set(x,y,z); parent.add(m); return m; }
 
 const people = PEOPLE.map(p => register({ kind:'person', ...p, fig:figs[p.id], label:p.name }, [figs[p.id].root]));
-const FOCUS = { gamer:[1.55,.55,-.75], sleeper:[1.9,1.1,.9], scroller:[1.55,.25,1.45], pacer:[1.35,.3,1.15], founder:[.6,.3,1.55], producer:[1.35,.35,.45], gardener:[.75,.35,1.3], artist:[.7,.45,1.25] };
+const FOCUS = { gamer:[1.55,.55,-.75], sleeper:[1.9,1.1,.9], scroller:[1.55,.25,1.45], pacer:[1.35,.3,1.15], founder:[.6,.3,1.55], shooter:[1.25,.35,1.1], chess:[1.2,.5,1.15], producer:[1.35,.35,.45], gardener:[.75,.35,1.3], artist:[.7,.45,1.25] };
 
 register({ kind:'item', label:'Gaming laptop', title:'Gaming laptop', eyebrow:'Object · desk',
   body:'In the full version, laptops open R208 projects. This one would play the Stealth Assist explainer.',
@@ -1228,6 +1296,35 @@ function animate(){
     f.setClosed(((t + f.blinkOff) % f.blinkEvery) < .12);
     f.pupils.position.set(0, up > .2 ? .004 : -.006, 0);
     if (draw > .5) drawSketch();
+  }
+  // Dewan: lines up the shot, then the flash fires; when clicked he turns the camera on you
+  { const f = figs.shooter, go = 1 - f.lookW;
+    if (t > f.nextShot){ f.shotAt = t; f.nextShot = t + 3.5 + rand()*3; }
+    const since = t - f.shotAt, fl = since < .12 ? 1 - since/.12 : 0, dip = since < .5 ? Math.sin(since/.5*Math.PI) : 0;
+    f.flash.intensity = fl*5; f.flashBulb.material.opacity = fl;
+    f.spine.rotation.x = .1 + .04*Math.sin(t*.7)*go;
+    f.cam.rotation.x = .55*go - .1*(1 - go) - .05*dip;
+    f.L.sh.rotation.x = f.R.sh.rotation.x = f.base.sh - .25*(1 - go);
+    f.root.position.y = PACE.stand - .008*dip;
+    f.neck.rotation.x = (.3 + .08*Math.sin(t*.4))*go;
+    f.head.rotation.set(0, .05*Math.sin(t*.5)*go, 0);
+    f.torso.scale.z = 1 + .02*Math.sin(t*1.4);
+    f.setClosed(((t + f.blinkOff) % f.blinkEvery) < .12 || fl > .4);
+  }
+  // Ebunrere: thinks, reaches over, makes a move, then plays the other side
+  { const f = figs.chess, go = 1 - f.lookW, g = f.game, MOVE = 5.5;
+    if (t - g.t0 > MOVE){ g.t0 = t;
+      if (g.n >= f.moves.length){ f.pieces.forEach((p,i)=>p.position.copy(f.home[i])); g.n = 0; }
+      const m = f.moves[g.n++]; g.piece = f.pieces[m.k]; g.from = g.piece.position.clone(); g.to = m.to; }
+    const ph = (t - g.t0)/MOVE, reach = ph > .55 && ph < .95 ? Math.sin((ph - .55)/.4*Math.PI) : 0;
+    if (g.from){ const u = THREE.MathUtils.clamp((ph - .66)/.16, 0, 1), e = u*u*(3 - 2*u);
+      g.piece.position.lerpVectors(g.from, g.to, e); g.piece.position.y = g.from.y + .04*Math.sin(e*Math.PI); }
+    f.R.sh.rotation.x = f.base.sh - .55*reach*go; f.R.el.rotation.x = f.base.el + .45*reach*go;
+    f.neck.rotation.x = f.base.neck*go;
+    f.head.rotation.set(0, (.12*Math.sin(t*.35) + .1*Math.sign(Math.sin(t*Math.PI/MOVE)))*go*(1 - reach), 0);
+    f.L.el.rotation.x = -.55 - .5*Math.max(0, Math.sin(t*.5))*(1 - reach)*go;   // chin in hand while thinking
+    f.torso.scale.z = 1 + .02*Math.sin(t*1.3);
+    f.setClosed(((t + f.blinkOff) % f.blinkEvery) < .12);
   }
   // Terence: clip-driven. Waves once when clicked; his head turns to the camera
   if (figs.founder){ const f = figs.founder, on = !!active && active.id === 'founder';
