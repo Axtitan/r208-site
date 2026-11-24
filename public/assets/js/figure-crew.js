@@ -579,14 +579,38 @@ export function buildCharacter(sp){
   }
 
   // ---------- hands, shirt cuffs, watch ----------
+  // finger bends (radians toward the palm) at the knuckle (k) and the middle joint (m), little finger to index; the thumb tilts in toward the index (ta),
+  // swings across the palm (th) and curls its tip (tc)
+  const HANDS = {
+    open:  { k:[.06,.04,.02,0],   m:[.08,.06,.04,.02], ta:.55, th:.05, tc:0 },
+    relax: { k:[.5,.42,.34,.26],  m:[.75,.62,.52,.42], ta:.5,  th:.3,  tc:.2 },
+    type:  { k:[.42,.38,.36,.34], m:[.85,.8,.75,.7],   ta:.45, th:.35, tc:.25 },
+    grip:  { k:[.55,.5,.45,.4],   m:[1.3,1.25,1.2,1.15], ta:.2, th:.75, tc:.3 },
+    pinch: { k:[1.25,1.15,1.05,.9], m:[1.45,1.4,1.35,.75], ta:.2, th:.65, tc:.15 },
+  };
+  const hands = {}, tips = { L:{}, R:{} };
   for (const [s,S] of SIDES){
     const d = armDir(s), O = armOut(s), fz = O.clone().cross(d), front = fz.z > 0 ? fz : fz.clone().negate();     // the thumb side faces forward
     const basis = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(O, d, fz));
-    const Hg = rigid('hand'+S), B = new Batch(), W = armPt(s,HT), at = (t,f) => W.clone().addScaledVector(d, t).addScaledVector(front, f);
-    B.add(M.skin, sph(14,10), mx(at(.045,0), [.0185,.043,.036], basis));
-    for (let i=0;i<4;i++) B.add(M.skin, sph(10,8), mx(at(.1 - .004*Math.abs(i - 1.5), -.0265 + i*.0177), [.0086,.032,.0086], basis));
-    B.add(M.skin, sph(10,8), mx(at(.05,.04), [.0098,.027,.0098], basis.clone().multiply(qa(X, -.55*(fz.z > 0 ? 1 : -1)))));
-    B.into(Hg, inked);
+    const Hg = rigid('hand'+S), W = armPt(s,HT), at = (t,f) => W.clone().addScaledVector(d, t).addScaledVector(front, f), palmN = O.clone().negate();
+    // one mesh per hand shape; the fingers bend toward the palm at the knuckle and again at the middle joint, the thumb swings across to meet them
+    const seg = (B, p0, dir, L, r) => B.add(M.skin, sph(10,8), mx(p0.clone().addScaledVector(dir, L/2), [r, L/2 + r*.55, r], new THREE.Quaternion().setFromUnitVectors(Y, dir)));
+    const bend = a => d.clone().multiplyScalar(Math.cos(a)).addScaledVector(palmN, Math.sin(a));
+    hands[S] = {};
+    for (const [kind, H] of Object.entries(HANDS)){
+      const B = new Batch(), g = new THREE.Group(); g.visible = kind === 'relax'; Hg.add(g); hands[S][kind] = g; let tip;
+      B.add(M.skin, sph(14,10), mx(at(.045,0), [.0185,.043,.036], basis));
+      for (let i=0;i<4;i++){ const o = Math.abs(i - 1.5), K = at(.072 - .003*o, -.0265 + i*.0177), L1 = .03 - .003*o - (i === 0 ? .003 : 0), L2 = .027 - .003*o - (i === 0 ? .003 : 0);
+        const a1 = H.k[i], a2 = a1 + H.m[i], J = K.clone().addScaledVector(bend(a1), L1);
+        seg(B, K, bend(a1), L1, .0088); seg(B, J, bend(a2), L2, .0081);
+        if (i === 3) tip = J.clone().addScaledVector(bend(a2), L2); }
+      const tb = W.clone().addScaledVector(d, .028).addScaledVector(front, .04).addScaledVector(palmN, .004);
+      const td = d.clone().multiplyScalar(Math.cos(H.ta)).addScaledVector(front, -Math.sin(H.ta)).multiplyScalar(Math.cos(H.th)).addScaledVector(palmN, Math.sin(H.th)).normalize();
+      const t2 = td.clone().lerp(bend(1.2), H.tc).normalize(), tj = tb.clone().addScaledVector(td, .03);
+      seg(B, tb, td, .03, .0098); seg(B, tj, t2, .024, .009);
+      // where the index and thumb tips meet, from the wrist: along the hand, out of the palm, toward the thumb side
+      const m = tip.add(tj.addScaledVector(t2, .024)).multiplyScalar(.5).sub(W); tips[S][kind] = { a:m.dot(d), b:m.dot(palmN), c:m.dot(front) };
+      B.into(g, inked); }
     const F = rigid('forearm'+S), B2 = new Batch(), ax = new THREE.Quaternion().setFromUnitVectors(Y, d), ox = new THREE.Quaternion().setFromUnitVectors(Y, O);
     if (shirted) B2.add(M.shirt, new THREE.CylinderGeometry(.037,.037,.018,18,1,true), mx(armPt(s,HT + .003), 1, ax));
     if (sp.watch && s > 0){ const t = short ? HT - .006 : HT + .018, r = short ? .0315 : .0355;        // watch on the left wrist
@@ -697,15 +721,17 @@ export function buildCharacter(sp){
 
   // lying back against the pillow on a bed (its mattress at y 0), one knee up, phone held over the face with the right hand
   const scroll = u => { const w = 2*Math.PI*u, br = Math.sin(3*w), off = [0, .105 - .92, 0];
-    const P = { hips:[[X, -1.15]], spine:[[X, .3 + .01*br]], chest:[[X, .22 + .012*br]], neck:[[X, .3]], head:[[X, .4],[Y, .04*Math.sin(w)]] };
+    const P = { hips:[[X, -1.15]], spine:[[X, .3 + .01*br]], chest:[[X, .22 + .012*br]], neck:[[X, .42]], head:[[X, .66],[Y, .04*Math.sin(w)]] };
     plant(P, off, 'L', v(.13, .07, .8), v(.3, 1, 0), qa(X, -1.3));
     plant(P, off, 'R', v(-.06, .075, .5), v(-.35, 1, .15));
     const eye = toPose(P, off, 'head', v(0, 1.57, .09)), fw = toPose(P, off, 'head', Z, true), up = toPose(P, off, 'head', Y, true), sd = toPose(P, off, 'head', X, true);
-    const ph = eye.clone().addScaledVector(fw, .28).addScaledVector(up, -.13).addScaledVector(sd, -.05), palm = eye.clone().sub(ph).normalize(), dH = up.clone().projectOnPlane(palm).normalize();
-    hold(P, off, 'R', ph.clone().addScaledVector(palm, -.022).addScaledVector(dH, -.07 + .004*Math.max(0, Math.sin(8*w))**4), v(-1, -.6, 0), dH, palm);
+    // the phone upright in front of the eyes, screen to them; the right hand holds it from behind, fingers across its back and round the far edge, thumb on the screen
+    const ph = eye.clone().addScaledVector(fw, .29).addScaledVector(up, -.03).addScaledVector(sd, -.02), palm = eye.clone().sub(ph).normalize(), pu = up.clone().projectOnPlane(palm).normalize();
+    const dH = sd.clone().projectOnPlane(palm).normalize().applyAxisAngle(palm, -.22), thumb = dH.clone().cross(palm), flick = .003*Math.max(0, Math.sin(8*w))**4;
+    hold(P, off, 'R', ph.clone().addScaledVector(dH, -.04).addScaledVector(palm, -.023).addScaledVector(thumb, .006).addScaledVector(pu, flick), v(-1, -.6, 0), dH, palm);
     const side = toPose(P, off, 'spine', X, true), bn = toPose(P, off, 'spine', v(0, .2, 1), true).normalize(), belly = toPose(P, off, 'spine', v(.03, 1.05, .125));
     hold(P, off, 'L', belly.addScaledVector(bn, .015).addScaledVector(side, .07), side.clone().addScaledVector(bn, -.3), side.clone().negate().addScaledVector(bn, -.25), bn.clone().negate());
-    if (u === 0) props.phone = { p:ph, q:new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(dH.clone().cross(palm), dH, palm)) };
+    if (u === 0) props.phone = { p:ph, q:new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(pu.clone().cross(palm), pu, palm)) };
     return [P, off]; };
 
   // cross-legged on the floor over a chess board, chin in the left hand, the right hand resting on its knee; looks over the board
@@ -722,6 +748,11 @@ export function buildCharacter(sp){
     for (const n of ['upper_armL','forearmL','handL']) P[n] = [Lk[n][0].clone().slerp(Lc[n][0], c)];
     return [P, off]; };
   for (const c of [clip('CubeIdle', cubeIdle, 240), clip('CubeWalk', cubeWalk, 30), clip('Laptop', laptop, 150), clip('Scroll', scroll, 240), clip('Chess', chess, 165)]) act[c.name] = mixer.clipAction(c);
+  // three.js only writes a bone when its clip value changes, so anything turned on top of a held pose (a look, a reach, a flick) would pile up frame after frame.
+  // Each update starts from the clip's own last pose instead, so whatever is layered on top lasts one frame
+  const base = names.map(n=>bones[n].quaternion.clone()), hipP = bones.hips.position.clone(), mixUpdate = mixer.update.bind(mixer);
+  mixer.update = dt => { names.forEach((n,i)=>bones[n].quaternion.copy(base[i])); bones.hips.position.copy(hipP); mixUpdate(dt);
+    names.forEach((n,i)=>base[i].copy(bones[n].quaternion)); hipP.copy(bones.hips.position); return mixer; };
 
   // ---------- on top of any clip, after the mixer ----------
   // look: the head (and some of the neck) turns toward a point. A damped spring eases the turn in and out and follows a moving target, so it never snaps
@@ -729,7 +760,7 @@ export function buildCharacter(sp){
   const look = (target, on, dt) => {
     let gy = lk.y, gp = lk.p;
     if (target){ bones.chest.updateWorldMatrix(true, false); tv.copy(target); bones.chest.worldToLocal(tv).add(BONES.chest[0]).sub(EYE);
-      const yaw = Math.atan2(tv.x, tv.z); gy = Math.abs(yaw) > 2.4 ? 0 : 1.1*Math.tanh(yaw/1.1); gp = .5*Math.tanh(-Math.atan2(tv.y, Math.hypot(tv.x, tv.z))/.5); }
+      const yaw = Math.atan2(tv.x, tv.z); gy = 1.1*Math.tanh(yaw/1.1)*(1 - sst(1.9, 2.7, Math.abs(yaw))); gp = .5*Math.tanh(-Math.atan2(tv.y, Math.hypot(tv.x, tv.z))/.5); }   // from behind them: ease back to the front, no snap
     if (lk.w < .002 && !on){ lk.y = gy; lk.p = gp; lk.vy = lk.vp = 0; return; }
     for (const [k, g, w0] of [['w', on ? 1 : 0, 4.5], ['y', gy, 6], ['p', gp, 6]]){ lk['v'+k] += (w0*w0*(g - lk[k]) - 2*w0*lk['v'+k])*dt; lk[k] += lk['v'+k]*dt; }
     const w = Math.min(1, Math.max(0, lk.w));
@@ -737,10 +768,13 @@ export function buildCharacter(sp){
     bones.head.quaternion.slerp(tq.setFromEuler(te.set(lk.p*.65, lk.y*.6, 0)), w); };
   look.amount = () => Math.min(1, Math.max(0, lk.w));
   // reach: blend an arm toward a world point by w; directions are in world space
-  const reach = (S, target, w, pole, dH, palm) => { if (w <= .001) return;
+  // with a hand shape named in `at`, the point where that shape's thumb and index tips meet lands on the target instead of the wrist
+  const reach = (S, target, w, pole, dH, palm, at) => { if (w <= .001) return;
     const c = bones.chest; c.updateWorldMatrix(true, false); const mi = c.matrixWorld.clone().invert();
-    const R = (p, dir) => dir ? p.clone().transformDirection(mi) : p.clone().applyMatrix4(mi).add(BONES.chest[0]);
-    const [u, f, h] = armIK(S === 'L' ? 1 : -1, R(target), R(pole, true), dH && R(dH, true), palm && R(palm, true));
+    const R = (p, dir) => dir ? p.clone().transformDirection(mi) : p.clone().applyMatrix4(mi).add(BONES.chest[0]), s = S === 'L' ? 1 : -1, W = R(target);
+    if (at){ const T = tips[S][at], dh = R(dH, true), pn = R(palm, true).projectOnPlane(dh).normalize(), fr = dh.clone().cross(pn).multiplyScalar(-s);
+      W.addScaledVector(dh, -T.a).addScaledVector(pn, -T.b).addScaledVector(fr, -T.c); }
+    const [u, f, h] = armIK(s, W, R(pole, true), dH && R(dH, true), palm && R(palm, true));
     bones['upper_arm'+S].quaternion.slerp(u, w); bones['forearm'+S].quaternion.slerp(f, w); bones['hand'+S].quaternion.slerp(h, w); };
   // anchor: hang an object on a bone at a point (and turn) given in body coordinates, in the current pose
   const anchor = (n, p, obj, q=new THREE.Quaternion()) => { root.updateMatrixWorld(true); const b = bones[n], bq = new THREE.Quaternion(), yq = new THREE.Quaternion();
@@ -749,5 +783,7 @@ export function buildCharacter(sp){
   // blinking is driven here, so it keeps going under any clip
   const OPEN = -.66, SHUT = 1.15; let bt = 1.5 + Math.random(); lids.forEach(l=>l.rotation.x = OPEN);
   const tick = dt => { bt -= dt; if (bt < -.16) bt = 2.4 + Math.random()*2.6; const k = bt < 0 ? Math.sin(Math.min(1, -bt/.16)*Math.PI) : 0; for (const l of lids) l.rotation.x = lerp(OPEN, SHUT, k); };
-  return { root, head:bones.head, bones, mixer, act, tick, height:sp.height, look, reach, anchor, props };
+  // hand shape per side: open, relax, type, grip or pinch
+  const hand = (S, kind) => { for (const k in hands[S]) hands[S][k].visible = k === kind; };
+  return { root, head:bones.head, bones, mixer, act, tick, height:sp.height, look, reach, anchor, props, hand, tips };
 }

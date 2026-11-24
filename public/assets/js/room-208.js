@@ -732,7 +732,7 @@ const spring = (o, k, goal, w0, dt) => { const vk = k + 'V'; o[vk] = (o[vk] || 0
 
 // Gbolahan: lying back on the bottom bunk, one knee up, scrolling a phone
 {
-  const f = crewFig('adeola', bunkB.position.x + .02, BUNK.lowerTop, bunkB.position.z - .42, .25, 'Scroll'); figs.scroller = f;
+  const f = crewFig('adeola', bunkB.position.x + .02, BUNK.lowerTop, bunkB.position.z - .42, .25, 'Scroll'); figs.scroller = f; f.t.hand('R', 'grip');
   const phoneT = canvasTex(72,128); f.phoneT = phoneT;
   const phone = new THREE.Group(); f.phone = phone;
   phone.add(at(box(.09,.16,.012,mat(0x111111,{ roughness:.3 }),.012), 0,0,-.007));
@@ -792,7 +792,7 @@ function cubeTurn(cb, dt){
   if (m.undo && !cb.queue.length){ cb.solved = clockT; cb.wait = 2.6; }
 }
 {
-  const f = crewFig('agyo', PACE.a.x, 0, PACE.a.z, 0); figs.pacer = f;
+  const f = crewFig('agyo', PACE.a.x, 0, PACE.a.z, 0); figs.pacer = f; f.t.hand('L', 'grip'); f.t.hand('R', 'grip');
   f.t.act.CubeIdle.play(); f.t.act.CubeWalk.play(); f.t.act.CubeIdle.setEffectiveWeight(0);
   f.cube = makeCube(); f.cube.g.scale.setScalar(.8); f.cube.g.position.set(0, -.105, .27); f.cube.g.rotation.set(.35, .2, 0); f.t.bones.chest.add(f.cube.g);
   f.walk = { to:'b', state:'walk', turnT:0, yaw:0 }; f.spd = .42; f.gait = 1; f.face = 0;
@@ -803,7 +803,7 @@ function cubeTurn(cb, dt){
 // Wright: on the edge of bunk A's bottom bed, laptop on the knees, headphones on, making a beat
 const beatT = canvasTex(256,160);
 {
-  const f = crewFig('wright', bunkA.position.x + BUNK.Wd/2 - .2, 0, bunkA.position.z - .1, Math.PI/2, 'Laptop'); figs.producer = f;
+  const f = crewFig('wright', bunkA.position.x + BUNK.Wd/2 - .2, 0, bunkA.position.z - .1, Math.PI/2, 'Laptop'); figs.producer = f; f.t.hand('L', 'type'); f.t.hand('R', 'type');
   const lap = makeLaptop(beatT.tex); lap.scale.setScalar(.8); f.t.anchor('hips', f.t.props.laptop.p, lap, f.t.props.laptop.q); f.lap = lap;
 }
 const BEAT = [[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],[1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0],[0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,0],[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],[0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0]];
@@ -919,7 +919,7 @@ const CHESS = { x:.55, z:1.35, yaw:.63 };
   const top = new THREE.Mesh(new THREE.PlaneGeometry(.3,.3), mat(0xffffff,{ map:bt.tex, roughness:.5 })); top.rotation.x = -Math.PI/2; top.position.y = .0185; top.receiveShadow = true; board.add(top);
   const sq = (i,j) => new THREE.Vector3((i - 3.5)*.0375, .0185, (j - 3.5)*.0375);
   const wM = mat(0xf2ede2,{ roughness:.35 }), kM = mat(0x161618,{ roughness:.3 });
-  const piece = (m, tall) => { const p = new THREE.Group(); p.add(at(cyl(.011,.014,.008,m,12), 0,.004,0), at(cyl(.006,.01,tall,m,12), 0,.008 + tall/2,0), at(sph(.009,m,10,8), 0,.012 + tall,0)); return p; };
+  const piece = (m, tall) => { const p = new THREE.Group(); p.userData.top = .012 + tall; p.add(at(cyl(.011,.014,.008,m,12), 0,.004,0), at(cyl(.006,.01,tall,m,12), 0,.008 + tall/2,0), at(sph(.009,m,10,8), 0,.012 + tall,0)); return p; };
   const set = [[wM,.022,1,1],[wM,.03,3,0],[wM,.018,4,2],[wM,.022,6,1],[kM,.022,2,6],[kM,.03,4,7],[kM,.018,3,5],[kM,.022,5,6],[kM,.026,6,5]];
   f.pieces = set.map(([m,tall,i,j])=>{ const p = piece(m,tall); p.position.copy(sq(i,j)); board.add(p); return p; });
   // moves played in turn, white then black; then the game resets
@@ -930,7 +930,7 @@ const CHESS = { x:.55, z:1.35, yaw:.63 };
 }
 // Terence: idles, and waves when clicked
 {
-  const f = crewFig('terence', 1.5, 0, -1.5, .35, 'Idle'); figs.founder = f;
+  const f = crewFig('terence', 1.5, 0, -1.5, .35, 'Idle'); figs.founder = f; f.t.hand('R', 'open');
   const { mixer, act } = f.t;
   mixer.addEventListener('finished', ()=>{ act.Idle.reset().play(); act.Wave.crossFadeTo(act.Idle, .3, false); });
 }
@@ -1289,9 +1289,11 @@ function animate(){
     a.time = THREE.MathUtils.clamp(ph, 0, .999)*MOVE; f.t.mixer.update(0); f.t.tick(dt);
     // the reach: lean in, the right hand comes to the piece, carries it across, and goes back to the knee
     spring(f, 'rw', g.piece && !on ? THREE.MathUtils.smoothstep(ph, .52, .64)*(1 - THREE.MathUtils.smoothstep(ph, .84, .96)) : 0, 14, dt);
+    // thumb and finger close on the piece's head as the hand arrives and let go once it's down; the pinch is what lands on the piece
+    f.t.hand('R', g.piece && !on && ph > .61 && ph < .86 ? 'pinch' : 'relax');
     if (f.rw > .002){ b.spine.rotateX(.32*f.rw); b.chest.rotateX(.08*f.rw);
-      g.piece.getWorldPosition(v3); v3.y += .075*f.scale; v3.addScaledVector(d(0,0,1), -.03*f.scale);
-      f.t.reach('R', v3, Math.min(1, f.rw), d(-1, -.4, -.3), d(0, -1, .45), d(0, -1, 0)); }
+      g.piece.updateWorldMatrix(true, false); g.piece.localToWorld(v3.set(0, g.piece.userData.top, 0));
+      f.t.reach('R', v3, Math.min(1, f.rw), d(-1, -.4, -.3), d(0, -.55, 1), d(0, -1, 0), 'pinch'); }
     // clicked: the left hand settles on its knee while the head comes up to you
     const lw = f.t.look.amount();
     if (lw > .002){ b.shinL.getWorldPosition(v3); v3.y += .085*f.scale; f.t.reach('L', v3, lw, d(1, -.3, -.4), d(-.2, -.55, 1), d(0, -1, 0)); }
