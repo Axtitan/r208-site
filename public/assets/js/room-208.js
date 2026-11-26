@@ -179,6 +179,29 @@ function textSprite(text, { color='#F4F2EE', bg=null, size=.32, font='700 84px "
   s.scale.set(size*2, size, 1); return s;
 }
 
+// tags: a word over someone's head ("Solved!", "GG", "lol"). The canvas is cut to the word, so the sprite keeps its shape,
+// and it is sized for the camera's distance like the speech bubbles, so it reads the same from across the room or up close
+function makeTag(text, { bg = '#d6ff4b', color = '#0b0b0a' } = {}){
+  const font = '700 60px "Space Grotesk", sans-serif', m = document.createElement('canvas').getContext('2d'); m.font = font;
+  const pw = Math.ceil(m.measureText(text).width) + 68, ph = 96, pad = 18, tail = 22, w = pw + pad*2, h = ph + tail + pad*2;
+  const { tex } = canvasTex(w, h, g => {
+    g.shadowColor = 'rgba(0,0,0,.3)'; g.shadowBlur = 14; g.shadowOffsetY = 4; g.fillStyle = bg;
+    g.beginPath(); g.roundRect(pad, pad, pw, ph, ph/2); g.moveTo(w/2 - 15, pad + ph - 1); g.lineTo(w/2, pad + ph + tail); g.lineTo(w/2 + 15, pad + ph - 1); g.fill();
+    g.shadowColor = 'transparent'; g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = color; g.fillText(text, w/2, pad + ph/2 + 3);
+  });
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true, depthTest:false, depthWrite:false, toneMapped:false }));
+  sp.renderOrder = 10; sp.visible = false; sp.userData.aspect = w/h; return sp;
+}
+// v runs 0..1: it pops in with a small overshoot and shrinks away; it gives way to a speech bubble
+function showTag(sp, f, v){
+  if (f.speech?.sprite.visible) v = 0;
+  sp.visible = v > .02; if (!sp.visible) return;
+  f.head.getWorldPosition(tagV); const k = THREE.MathUtils.clamp(camera.position.distanceTo(tagV)*.3, .2, .95);
+  const x = Math.min(1, v*1.5) - 1, pop = 1 + 2.70158*x*x*x + 1.70158*x*x, h = k*.3*pop;
+  sp.scale.set(h*sp.userData.aspect, h, 1); sp.position.set(tagV.x, tagV.y + .12 + k*.28 + h*.5, tagV.z); sp.material.opacity = Math.min(1, v*3);
+}
+const tagV = new THREE.Vector3();
+
 /* ---------- room shell ---------- */
 const W = 6, D = 5.2, H = 2.4;
 const room = new THREE.Group(); scene.add(room);
@@ -907,7 +930,7 @@ const figs = {};
   pad.add(at(box(.2,.05,.1,padM,.02), 0,0,0), at(box(.07,.05,.11,padM,.025), -.09,-.015,-.02), at(box(.07,.05,.11,padM,.025), .09,-.015,-.02));
   pad.add(at(sph(.012,glow(LIME)), .05,.03,.01), at(sph(.012,glow(0xff5e7e)), .07,.03,-.01));
   room.add(f.root);
-  f.gg = textSprite('GG', { color:'#0b0b0a', bg:'#d6ff4b', size:.22 }); f.gg.visible = false; room.add(f.gg);
+  f.gg = makeTag('GG'); room.add(f.gg);
 }
 // sleeper: lying on the top bunk under a blanket
 {
@@ -948,7 +971,7 @@ const spring = (o, k, goal, w0, dt) => { const vk = k + 'V'; o[vk] = (o[vk] || 0
   phone.add(at(new THREE.Mesh(new THREE.PlaneGeometry(.078,.142), new THREE.MeshBasicMaterial({ map:phoneT.tex, toneMapped:false })), 0,0,.0005));
   f.phoneLight = new THREE.PointLight(0xcfe4ff, .7, 1.1, 2); f.phoneLight.position.set(0,0,.12); phone.add(f.phoneLight);
   phone.scale.setScalar(.82); f.t.anchor('handR', f.t.props.phone.p, phone, f.t.props.phone.q);
-  f.lol = textSprite('lol', { color:'#0b0b0a', bg:'#f4f2ee', size:.2, font:'700 70px "Space Grotesk", sans-serif' }); f.lol.visible = false; room.add(f.lol);
+  f.lol = makeTag('lol', { bg:'#f4f2ee' }); room.add(f.lol);
 }
 // Michael: pacing between the bunks and the rug, solving a Rubik's cube
 const PACE = { a:new THREE.Vector3(-1.25,0,-.5), b:new THREE.Vector3(-.4,0,1.72) };
@@ -1008,7 +1031,7 @@ function cubeTurn(cb, dt){
   f.walk = { to:'b', state:'walk', turnT:0, yaw:0 }; f.spd = .42; f.gait = 1; f.face = 0;
   f.stride = 4*.785*Math.sin(.34)*f.scale;            // ground covered per cycle of the walk clip
   { const d = PACE.b.clone().sub(PACE.a); f.walk.yaw = Math.atan2(d.x, d.z); f.root.rotation.y = f.walk.yaw; }
-  f.solvedTag = textSprite('solved!', { color:'#0b0b0a', bg:'#d6ff4b', size:.2, font:'700 64px "Space Grotesk", sans-serif' }); f.solvedTag.visible = false; room.add(f.solvedTag);
+  f.solvedTag = makeTag('Solved!'); room.add(f.solvedTag);
 }
 // Wright: on the edge of bunk A's bottom bed, laptop on the knees, headphones on, making a beat
 const beatT = canvasTex(256,160);
@@ -1451,7 +1474,7 @@ function animate(){
     f.torso.scale.z = 1 + .025*Math.sin(t*1.6);
     f.setClosed(((t + f.blinkOff) % f.blinkEvery) < .12 || k > .3);
     f.mouth.visible = k <= .3; f.mouthOpen.visible = k > .3;
-    f.gg.visible = k > .05 && f.lookW < .2; if (f.gg.visible){ f.head.getWorldPosition(v3); f.gg.position.set(v3.x, v3.y + .5 + k*.08, v3.z); f.gg.scale.set(.44*k+.1,.22*k+.05,1); }
+    showTag(f.gg, f, f.lookW < .2 ? k : 0);
   }
   // sleeper
   { const f = figs.sleeper, b = Math.sin(t*1.25);
@@ -1470,7 +1493,7 @@ function animate(){
     if (lk > 0){ b.chest.rotateZ(lk*.035*Math.sin(t*26)); b.chest.rotateX(-.06*lk); b.neck.rotateX(-.2*lk); }
     f.t.look(camera.position, on, dt);
     f.phoneLight.intensity = .3 + .06*Math.sin(t*3);
-    f.lol.visible = lk > .05; if (lk > .05){ f.head.getWorldPosition(v3); f.lol.position.set(v3.x + .35, v3.y + .35 + lk*.06, v3.z + .1); f.lol.scale.set(.4*lk+.08,.2*lk+.04,1); }
+    showTag(f.lol, f, lk);
   }
   // Michael: walks the line and turns at each end, working the cube the whole way; slows to a stop and looks up when clicked
   { const f = figs.pacer, w = f.walk, held = cubeCtl.busy, on = active?.id === 'pacer' || held, A = f.t.act, b = f.t.bones, SPD = .42;
@@ -1506,8 +1529,7 @@ function animate(){
     if (tw){ b.handR.rotateX(-.16*tw); b.handL.rotateX(.08*tw); }
     if (lift){ b.chest.rotateX(-.08*lift); b.neck.rotateX(-.3*lift); }
     f.t.look(cubeCtl.holding ? cubeCtl.P : camera.position, on, dt);
-    f.solvedTag.visible = lift > .05 && f.lookW < .2;
-    if (f.solvedTag.visible){ f.head.getWorldPosition(v3); f.solvedTag.position.set(v3.x, v3.y + .48 + lift*.06, v3.z); f.solvedTag.scale.set(.5*lift+.1,.2*lift+.04,1); }
+    showTag(f.solvedTag, f, f.lookW < .2 ? lift : 0);
   }
   // Wright: the clip nods on the beat and taps a foot; its clock follows the screen's, so the nod lands on the kick
   { const f = figs.producer, a = f.t.act.Laptop;
@@ -1650,4 +1672,3 @@ addEventListener('resize', ()=>{
 drawGame(0); drawMovie(0); drawPhone(0); drawBeat(0);
 requestAnimationFrame(animate);
 setTimeout(()=>$('loader').classList.add('done'), 450);
-
