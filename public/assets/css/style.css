@@ -449,6 +449,9 @@ body{transition:background-color .45s,color .45s}
 .team-track .t-photo{aspect-ratio:16/10;position:relative}
 .t-ini{font-family:var(--font-display);font-weight:700;font-size:clamp(56px,6vw,92px);letter-spacing:-.04em;line-height:1;color:var(--steel);transition:color .4s}
 .team-card:hover .t-ini{color:var(--signal-text)}
+.t-photo--img{align-items:flex-end}
+.t-photo--img img{height:94%;width:auto;transform-origin:50% 100%;transition:transform .6s var(--ease-out)}
+.team-card:hover .t-photo--img img{transform:scale(1.03)}
 .t-tiles{position:absolute;left:16px;bottom:16px;display:flex;gap:5px}
 .t-tiles i{width:10px;height:10px;background:var(--ink-3);transition:background .4s}
 .team-card:hover .t-tiles i{background:var(--signal)}
