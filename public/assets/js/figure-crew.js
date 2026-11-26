@@ -478,6 +478,7 @@ export function buildCharacter(sp){
 
   // ---------- head: round skull, flat cartoon face front, soft chin ----------
   const EY = 1.572, HC = v(0, 1.565, .012), HR = [.094,.14,.104], LY = .13, MY = EY - .077;
+  let mouth = null;
   const low = t => [Math.max(0, 1 - t**2.5)**.4*(1 - .12*sst(.5,1,t)), Math.max(0, 1 - t**4)**.25, Math.max(0, 1 - t**1.6)**.8];
   const headPt = n => { let x, z; if (n.y < 0){ const t = Math.min(.9999, -n.y), s0 = Math.sqrt(1 - t*t), [sx,sf,sb] = low(t); x = n.x/s0*sx*HR[0]; z = n.z/s0*(n.z > 0 ? sf : sb)*HR[2] + .032*t**2.5; } else { x = n.x*HR[0]; z = n.z*HR[2]; }
     return v(x + HC.x, n.y*(n.y < 0 ? LY : HR[1]) + HC.y, (z < 0 ? z*1.04 : z) + HC.z); };
@@ -597,6 +598,10 @@ export function buildCharacter(sp){
         B.add(ph, new THREE.BoxGeometry(.008, .034, .012), mx(c.clone().add(v(s*.002, .038, 0)))); }
     }
     B.into(G, inked);
+    // talking: a dark open mouth that drops open under the drawn one (below the teeth on a grin), shut until they speak
+    const my = sp.mouth === 'grin' ? MY - .0145 : sp.mouth === 'flat' ? MY - .0005 : MY - .0035;
+    mouth = new THREE.Mesh(new THREE.CircleGeometry(1, 24), flat('#3a1613')); mouth.userData.y = my;
+    mouth.position.set(0, my, headZ(0, my) + (sp.mouth === 'flat' ? .0046 : .0017)); mouth.scale.set(.0115, 1e-4, 1); mouth.visible = false; G.add(mouth);
   }
 
   // ---------- hands, shirt cuffs, watch ----------
@@ -834,10 +839,17 @@ export function buildCharacter(sp){
 
   // blinking is driven here, so it keeps going under any clip
   const OPEN = -.66, SHUT = 1.15; let bt = 1.5 + Math.random(), shut = 0; lids.forEach(l=>l.rotation.x = OPEN);
-  const tick = dt => { bt -= dt; if (bt < -.16) bt = 2.4 + Math.random()*2.6; const k = Math.max(shut, bt < 0 ? Math.sin(Math.min(1, -bt/.16)*Math.PI) : 0); for (const l of lids) l.rotation.x = lerp(OPEN, SHUT, k); };
+  let talking = false, tt = Math.random()*9, open = 0;
+  const tick = dt => { bt -= dt; if (bt < -.16) bt = 2.4 + Math.random()*2.6; const k = Math.max(shut, bt < 0 ? Math.sin(Math.min(1, -bt/.16)*Math.PI) : 0); for (const l of lids) l.rotation.x = lerp(OPEN, SHUT, k);
+    // syllables: a quick open-shut, louder and softer in waves, and a pause now and then
+    tt += dt; const want = talking ? Math.abs(Math.sin(tt*10.5))**.8*(.55 + .45*Math.sin(tt*2.3))*(Math.sin(tt*.9) > -.85 ? 1 : 0) : 0;
+    open += (want - open)*Math.min(1, dt*22);
+    if (mouth){ const r = .0062*Math.max(0, open); mouth.visible = r > .0004; mouth.scale.y = Math.max(r, 1e-4); mouth.position.y = mouth.userData.y - r*.45; } };
+  // talk(true) while a speech bubble is up
+  const talk = on => { talking = on; };
   // eyes: 1 keeps them shut (asleep), 0 leaves them to blink
   const eyes = k => { shut = k; };
   // hand shape per side: open, relax, type, grip or pinch
   const hand = (S, kind) => { for (const k in hands[S]) hands[S][k].visible = k === kind; };
-  return { root, head:bones.head, bones, mixer, act, tick, height:sp.height, look, reach, anchor, props, hand, tips, eyes };
+  return { root, head:bones.head, bones, mixer, act, tick, height:sp.height, look, reach, anchor, props, hand, tips, eyes, talk };
 }

@@ -1240,6 +1240,13 @@ function openPerson(p){
   const off = base.multiplyScalar((narrow ? 1.7 : 1)*Math.tan(THREE.MathUtils.degToRad(18))/Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
   if (narrow) target.y -= .35;
   const pos = target.clone().add(off);
+  const cr = $('card').getBoundingClientRect();
+  if (!narrow && cr.width && cr.left > innerWidth*.45){
+    // slide sideways so they land in the middle of the space left of the card
+    const xc = (cr.left - 16)/innerWidth - 1, d = pos.distanceTo(target), fw = target.clone().sub(pos).normalize();
+    const rt = new THREE.Vector3().crossVectors(fw, walkUp).normalize(), hx = Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect;
+    const sh = rt.multiplyScalar(-xc*d*hx); pos.add(sh); target.add(sh);
+  }
   pos.z = THREE.MathUtils.clamp(pos.z, -D/2 + .2, D/2 - .2); pos.x = THREE.MathUtils.clamp(pos.x, -W/2 + .2, W/2 - .2); // never end up behind a wall
   strictLimits(false); flyTo(pos, target);
 }
@@ -1268,18 +1275,19 @@ $('resetBtn').addEventListener('click', ()=>{ if (modes.current) return modes.st
 
 // day: sun through the barred windows; night: moonlight, string lights, lamps and screens
 const SUN_DIR = new THREE.Vector3(.38, .95, -1).normalize(), MOON_DIR = new THREE.Vector3(-.45, 1.05, -1).normalize();
-let isDay = true;
+let isDay = true, envReady = false, envRT = null;   // (the room's light snapshot is retaken on each switch once it exists)
 function setDay(day, silent){
   isDay = day; drawOutside(!day);
   sun.position.copy(day ? SUN_DIR : MOON_DIR).multiplyScalar(9).add(V(.3,0,-.4)); sun.target.position.set(.3,0,-.4);
   sun.color.setHex(day ? 0xffd9a8 : 0x7d95ff); sun.intensity = day ? 3.6 : .55;
-  hemi.color.setHex(day ? 0xfff1e2 : 0x7c86b8); hemi.groundColor.setHex(day ? 0x9a7a66 : 0x3a2a26); hemi.intensity = day ? 1.35 : .5;
+  hemi.color.setHex(day ? 0xfff1e2 : 0x7c86b8); hemi.groundColor.setHex(day ? 0x9a7a66 : 0x3a2a26); hemi.intensity = day ? .8 : .3;
   fill.intensity = day ? .7 : .3; renderer.toneMappingExposure = day ? 1.1 : 1.2;
   dust.material.opacity = day ? .55 : .25;
   toggle.position.y = day ? .022 : -.022;
   $('lightsBtn').setAttribute('aria-pressed', String(!day)); $('lightsBtn').querySelector('.lbl').textContent = day ? 'Night' : 'Day';
   $('lightsBtn').title = day ? 'Switch to night' : 'Switch to day';
   if (!silent) toast(day ? 'Morning. Someone groans from the top bunk.' : 'Night mode. Nobody is sleeping yet.');
+  if (envReady) bakeEnv();
 }
 function setTube(on){ tubeOn = on; tubeM.color.setHex(on ? 0xf4f8ff : 0xd9dde2); ceiling.intensity = on ? 22 : 0; toast(on ? 'Tube light on' : 'Tube light off'); }
 setDay(true, true);
@@ -1673,6 +1681,7 @@ function animate(){
   controls.update();
   camWant = camera.position.distanceTo(controls.target);
   keepInside();
+  groundTick();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
@@ -1682,6 +1691,89 @@ addEventListener('resize', ()=>{
   renderer.setSize(innerWidth, innerHeight);
   modes.current?.resize?.();
 });
+
+/* ---------- grounding: soft shadows where things meet, under furniture and under people ---------- */
+// (painted, not computed: they can't flicker, and they cost a few quads)
+const aoM = (map, o) => new THREE.MeshBasicMaterial({ color:0x000000, map, transparent:true, opacity:o, depthWrite:false, side:THREE.DoubleSide, toneMapped:false,
+  polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-2 });
+const seamT = canvasTex(4, 64, (g,w,h)=>{ const gr = g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'rgba(0,0,0,1)'); gr.addColorStop(.3,'rgba(0,0,0,.5)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0,0,w,h); }).tex;
+const blobT = canvasTex(128, 128, (g,w,h)=>{ const gr = g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2); gr.addColorStop(0,'rgba(0,0,0,.9)'); gr.addColorStop(.55,'rgba(0,0,0,.55)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0,0,w,h); }).tex;
+const padT = canvasTex(128, 128, (g,w,h)=>{ g.filter = 'blur(14px)'; g.fillStyle = '#000'; g.fillRect(26,26,w-52,h-52); }).tex;
+const unitG = new THREE.PlaneGeometry(1, 1);
+// under each big thing that stands on the floor: a soft pad the size of what's above it
+{ const figRoots = new Set(Object.values(figs).map(f => f.root)), bx = new THREE.Box3(), sz = new THREE.Vector3(), c = new THREE.Vector3();
+  for (const o of [...room.children]){ if (figRoots.has(o) || !o.visible) continue;
+    bx.setFromObject(o); bx.getSize(sz); bx.getCenter(c);
+    if (bx.min.y > .1 || sz.y < .2 || Math.min(sz.x, sz.z) < .25 || sz.x*sz.z > 4) continue;
+    const m = new THREE.Mesh(unitG, aoM(padT, Math.min(.55, .3 + sz.y*.12))); m.rotation.x = -Math.PI/2; m.scale.set(sz.x*1.25 + .14, sz.z*1.25 + .14, 1);
+    m.position.set(c.x, .009, c.z); m.renderOrder = 1; room.add(m); } }
+// along every wall: where it meets the floor and the ceiling, and up the corners
+const DOORZ = [-2.3, -1.34];
+for (const [nx, nz, L] of [[0,1,W], [0,-1,W], [1,0,D], [-1,0,D]]){
+  const pv = new THREE.Group(); pv.position.set(-nx*W/2, 0, -nz*D/2); pv.rotation.y = Math.atan2(nx, nz); room.add(pv);
+  const right = nx === -1;                                     // the wall with the door in it: local x runs along world z
+  const strip = (x0, x1, w, y, z, rx, flipY, o, rz = 0) => { const m = new THREE.Mesh(unitG, aoM(seamT, o)); m.scale.set(x1 - x0, flipY ? -w : w, 1);
+    m.position.set((x0 + x1)/2, y, z); m.rotation.set(rx, 0, rz); m.renderOrder = 1; pv.add(m); return m; };
+  strip(-L/2, L/2, .45, .003, .225, -Math.PI/2, false, .3);                 // floor, dark at the wall
+  strip(-L/2, L/2, .5, H - .003, .25, Math.PI/2, true, .2);                // ceiling
+  strip(-L/2, L/2, .35, H - .175, .003, 0, false, .16);                     // top of the wall
+  for (const [x0, x1] of right ? [[-L/2, DOORZ[0]], [DOORZ[1], L/2]] : [[-L/2, L/2]]) strip(x0, x1, .3, .15, .003, 0, true, .2);   // foot of the wall
+  for (const s of [-1, 1]){ if (right && s === -1) continue;               // (the door is right by that corner)
+    const m = strip(0, H, .32, H/2, .003, 0, false, .15, -s*Math.PI/2); m.scale.set(H, .32, 1); m.position.x = s*(L/2 - .16); }
+}
+// under each person: follows their feet, and fades as they leave the floor (the top bunk, a seat with the feet up)
+const fv1 = new THREE.Vector3(), fv2 = new THREE.Vector3(), fv3 = new THREE.Vector3();
+for (const f of Object.values(figs)){ f.blob = new THREE.Mesh(unitG, aoM(blobT, .5)); f.blob.rotation.order = 'YXZ'; f.blob.renderOrder = 2; room.add(f.blob); }
+
+// light bounced off the room itself: a blurred snapshot of the room lights the wood, metal and screens (taken again for day and night)
+const pmrem = new THREE.PMREMGenerator(renderer);
+function bakeEnv(){
+  const hid = Object.values(figs).map(f => [f, f.root.visible]); hid.forEach(([f]) => { f.root.visible = false; f.blob.visible = false; });
+  scene.environment = null;
+  for (const o of scene.children) o.position.y -= 1.2;                     // the snapshot is taken from the origin: lift it to head height
+  scene.updateMatrixWorld(true);
+  const rt = pmrem.fromScene(scene, .05, .05, 20);
+  for (const o of scene.children) o.position.y += 1.2;
+  scene.updateMatrixWorld(true);
+  hid.forEach(([f, v]) => f.root.visible = v);
+  envRT?.dispose(); envRT = rt; scene.environment = rt.texture;
+  scene.traverse(o => { const ms = o.material ? [o.material].flat() : []; for (const m of ms) if (m.isMeshStandardMaterial) m.envMapIntensity = .85; });
+}
+bakeEnv(); envReady = true;
+
+// someone standing between you and the person you opened, or right in front of the lens, steps out of the picture
+const occA = new THREE.Vector3(), occB = new THREE.Vector3();
+function blocks(f){
+  if (modes.current || active?.fig === f) return false;
+  f.head.getWorldPosition(fv1);
+  for (const dy of [0, .4, .8]){ fv2.copy(fv1); fv2.y -= dy;
+    if (fv2.distanceTo(camera.position) < .45) return true;
+    if (active?.kind === 'person' && active.fig !== f){
+      active.fig.head.getWorldPosition(occB); occA.copy(camera.position);
+      const ab = occB.sub(occA), t = THREE.MathUtils.clamp(fv3.copy(fv2).sub(occA).dot(ab)/ab.lengthSq(), 0, 1);
+      if (t > .04 && t < .9 && fv3.copy(occA).addScaledVector(ab, t).distanceTo(fv2) < .26) return true; } }
+  return false;
+}
+// (hides what's under the figure's root, so it never fights the games that hide a figure themselves)
+function setOcc(f, on){ f.occ = on;
+  if (on){ f.occKids = f.root.children.map(c => [c, c.visible]); for (const [c] of f.occKids) c.visible = false; }
+  else { for (const [c, v] of f.occKids || []) c.visible = v; f.occKids = null; } }
+function groundTick(){
+  for (const f of Object.values(figs)){
+    f.t.talk?.(!!f.speech?.sprite.visible);
+    // hide anyone in the way; they come back once they've been clear for a moment
+    if (blocks(f)){ if (!f.occ) setOcc(f, true); f.occUntil = clockT + .35; }
+    else if (f.occ && (modes.current || clockT > f.occUntil)) setOcc(f, false);
+    // the shadow sits between the feet (and back under the seat when they're sitting)
+    const B = f.t.bones; B.footL.getWorldPosition(fv1); B.footR.getWorldPosition(fv2); B.hips.getWorldPosition(fv3);
+    const low = Math.min(fv1.y, fv2.y), k = THREE.MathUtils.clamp(1 - (low - .12)/.3, 0, 1);
+    f.blob.visible = f.root.visible && !f.occ && k > .02; if (!f.blob.visible) continue;
+    const dx = fv2.x - fv1.x, dz = fv2.z - fv1.z, sp = Math.hypot(dx, dz), hk = fv3.y < .75 ? .45 : .2;
+    f.blob.position.set((fv1.x + fv2.x)/2*(1 - hk) + fv3.x*hk, .011, (fv1.z + fv2.z)/2*(1 - hk) + fv3.z*hk);
+    f.blob.rotation.set(-Math.PI/2, Math.atan2(-dz, dx), 0); f.blob.scale.set(Math.max(.62, sp + .5), .52 + (fv3.y < .75 ? .16 : 0), 1);
+    f.blob.material.opacity = .62*k;
+  }
+}
 
 drawGame(0); drawMovie(0); drawPhone(0); drawBeat(0);
 requestAnimationFrame(animate);
