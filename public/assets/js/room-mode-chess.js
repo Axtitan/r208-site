@@ -1,6 +1,6 @@
 /* Room 208: Ebun's chess board. A full Staunton set on a real board. Ebun plays both sides while you watch,
    and plays you when you ask: the full rules (room-chess.js), the thinking in a worker, Ebun's own hand on the pieces. */
-import { Game, search, bookMove, LEVELS, WHITE, BLACK, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
+import { Game, search, bookMove, san, LEVELS, WHITE, BLACK, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
   mFrom, mTo, mPromo, isCapture, isCastle, isEp } from './room-chess.js';
 
 export function createChess(ctx){
@@ -154,7 +154,7 @@ export function createChess(ctx){
   }
 
   /* ---------- the match ---------- */
-  const match = { view:'board', on:false, state:'off', level:'club', pick:'white', userColor:WHITE, sel:-1, id:0, score:0, offered:0 };
+  const match = { view:'board', zoom:1, on:false, state:'off', level:'club', pick:'white', userColor:WHITE, sel:-1, id:0, score:0, offered:0 };
   let worker = null, pending = null, wid = 0, workerTried = false;
   function think(opts){
     if (!workerTried){ workerTried = true;
@@ -187,19 +187,49 @@ export function createChess(ctx){
       else if (took && rand() < .3) talk(['Hmm.', 'Okay, I saw that.', 'Fair.'][rand()*3|0]);
     }
   }
+  // thinking out loud: while the worker searches, Ebun mutters about a couple of moves that catch the eye
+  // (captures and checks first), in words rather than notation, then says which one it is as the hand goes out
+  const PNAME = { N:'knight', B:'bishop', R:'rook', Q:'queen', K:'king' };
+  function spoken(m){
+    const s = san(game.pos, m, game.legalMoves);
+    if (s.startsWith('O-O-O')) return 'castling long'; if (s.startsWith('O-O')) return 'castling';
+    const dest = (s.match(/([a-h][1-8])(=[NBRQ])?[+#]?$/) || [])[1] || '', take = s.includes('x'), promo = s.match(/=([NBRQ])/);
+    let w = PNAME[s[0]] ? `${PNAME[s[0]]} ${take ? 'takes' : 'to'} ${dest}` : take ? `${s[0]} takes ${dest}` : dest;
+    if (promo) w += `, ${PNAME[promo[1]]}`;
+    return s.includes('+') || s.includes('#') ? w + ', check' : w;
+  }
+  const cap1 = t => /^[a-h]( takes|\d)/.test(t) ? t : t[0].toUpperCase() + t.slice(1);   // (a pawn's file letter stays small: "d takes e4")
+  function candidates(){
+    const VAL = [0, 1, 3, 3, 5, 9, 0];
+    return game.legalMoves.map(m => { const sn = san(game.pos, m, game.legalMoves);
+      return { m, k:(isCapture(m) ? 2 + VAL[game.pos.b[mTo(m)] & 7] : 0) + (/[+#]/.test(sn) ? 2.5 : 0) + rand()*2.2 }; })
+      .sort((a, b) => b.k - a.k).slice(0, 2).map(c => c.m);
+  }
+  function mutter(id){
+    const cs = candidates(), [a, b] = cs.map(spoken);
+    const first = b && rand() < .5 ? [`${cap1(a)}… or ${b}?`, `Hmm. ${cap1(a)}, maybe ${b}…`][rand()*2|0]
+                                   : [`Hmm. ${cap1(a)}?`, `What about ${a}…`, `If ${a}, what do you do then…`][rand()*3|0];
+    const second = b && rand() < .6 ? [`No wait. ${cap1(b)}.`, `${cap1(b)} looks interesting…`][rand()*2|0]
+                                    : ['What are you up to there…', 'Okay. Think.', 'Careful, careful…'][rand()*3|0];
+    [[.45, first], [2.4, second]].forEach(([at, line]) => setTimeout(() => { if (id === match.id && match.state === 'think') say('chess', line, 1.8); }, at*1000));
+    return cs;
+  }
   function userTurn(){ match.state = 'user'; match.sel = -1; marks(); status(game.check ? '<b>Check.</b> Your move.' : 'Your move. Tap a piece, then a square.'); buttons(); }
   async function ebunTurn(){
     match.state = 'think'; status('Ebun is thinking…'); buttons();
     const id = match.id, t0 = ctx.now(), L = LEVELS[match.level];
     let m = match.level === 'casual' && rand() < .5 ? 0 : bookMove(game, rand), score = match.score;
+    // more often when you're facing Ebun; a move with only one answer gets no speech
+    const loud = game.legalMoves.length > 1 && rand() < (match.view === 'table' ? .75 : .45), cs = loud ? mutter(id) : null;
     if (!m){ const r = await think({ depth:L.depth, ms:L.ms, noise:L.noise }); if (id !== match.id) return; m = r.move; score = r.score; }
     match.score = score;
-    const wait = (match.level === 'strong' ? .6 : 1.1) + rand()*1.1 - (ctx.now() - t0);
+    const wait = Math.max(loud ? 4.3 : 0, (match.level === 'strong' ? .6 : 1.1) + rand()*1.1) - (ctx.now() - t0);
     if (wait > 0) await new Promise(r => setTimeout(r, wait*1000));
     if (id !== match.id || !match.on) return;
     // a lost position: Ebun claims the draw if the rules allow it, or resigns a hopeless one
     if (game.claimable() && score < -60){ const why = game.claim(); talk(why === 'threefold repetition' ? 'Same position three times. I’ll take the draw.' : 'Fifty moves, nothing happening. Draw.', 3.5); return finish(); }
     if (match.level !== 'casual' && score < -1200 && game.moves.length > 30){ game.resign(game.pos.side); talk('Alright, you got me. GG.', 3.5); return finish(); }
+    if (loud) say('chess', cs.includes(m) ? `Yeah. ${cap1(spoken(m))}.` : `Actually… ${spoken(m)}.`, 1.8);
     match.state = 'reach'; status('Ebun is moving…');
     reach(m, () => { if (id === match.id && match.on && !game.result) userTurn(); });
   }
@@ -254,7 +284,7 @@ export function createChess(ctx){
   // before a game: Ebun asks, you pick a level and a colour
   function invite(){
     match.on = false; match.state = 'invite'; match.sel = -1; marks();
-    body = ui.open({ eyebrow:'Chess · Ebunrere', title:'Play Ebun at chess', mode });
+    body = ui.open({ eyebrow:'Chess · Ebunrere', title:'Play Ebun at chess', mode, cls:'side' });
     status('Ebun looks up from the board. <b>“Fancy a game?”</b>');
     const seg = (label, key, opts) => { const row = el('div', { className:'prow' }, [el('span', { className:'plabel', textContent:label })]);
       for (const [val, txt, hint] of opts){ const btn = el('button', { className:'pbtn', type:'button', textContent:txt, title:hint || '', ariaPressed:String(match[key] === val),
@@ -271,28 +301,68 @@ export function createChess(ctx){
     match.userColor = match.pick === 'random' ? (rand() < .5 ? WHITE : BLACK) : match.pick === 'white' ? WHITE : BLACK;
     userWhite = match.userColor === WHITE; drawBoard();
     game = new Game(); setup(true);
-    body = ui.open({ eyebrow:`Chess · ${LEVELS[match.level].label}`, title:`You (${userWhite ? 'White' : 'Black'}) vs Ebun`, mode });
+    body = ui.open({ eyebrow:`Chess · ${LEVELS[match.level].label}`, title:`You (${userWhite ? 'White' : 'Black'}) vs Ebun`, mode, cls:'side' });
     movesEl = el('div', { className:'moves', ariaLabel:'Moves' }); rowEl = el('div', { className:'prow' });
-    body.append(movesEl, rowEl); renderMoves();
+    // zoom buttons beside the move list, so they're there whatever the row below is showing
+    const zb = (txt, k, label) => el('button', { type:'button', textContent:txt, title:label + ' (scroll, pinch or ' + (k < 1 ? '+' : '−') + ')', ariaLabel:label, onclick:() => zoomBy(k) });
+    body.append(el('div', { className:'mrow' }, [movesEl, el('div', { className:'zoomb' }, [zb('+', 1/1.2, 'Zoom in'), zb('−', 1.2, 'Zoom out')])]), rowEl); renderMoves();
     frame();
     talk(userWhite ? 'You’re white. Your move.' : 'I’ll take white then.', 2.6);
     const id = match.id;
     setTimeout(() => { if (id !== match.id) return; userWhite ? userTurn() : ebunTurn(); }, 1300);
   }
-  // the camera: over your side of the board, looking down at it with Ebun across the table
-  function frame(){
+  // the camera: over your side of the board, looking down at it with Ebun across the table.
+  // The panel covers the bottom of the screen, so the board is fitted into the clear space above it and centred there; the zoom scales the distance
+  const playEl = document.getElementById('play'), UP = new V3(0, 1, 0);
+  function frame(dur = 1.2){
     const C = board.getWorldPosition(new V3()); C.y = TOP;
-    const a = innerWidth/innerHeight, vf = THREE.MathUtils.degToRad(ctx.camera.fov), hf = 2*Math.atan(Math.tan(vf/2)*a);
-    let dist = a < 1 ? .2/Math.tan(hf/2) : Math.max(.7, .28/Math.tan(hf/2)), elv = THREE.MathUtils.degToRad(a < 1 ? 66 : 61);
-    const tgt = C.clone().addScaledVector(fwd, a < 1 ? .13 : .05);
-    // the table view: lower and further back, so Ebun is across the board from you
-    if (match.view === 'table'){ dist = Math.max(1.4, .5/Math.tan(hf/2)); elv = THREE.MathUtils.degToRad(24); tgt.addScaledVector(fwd, -.2 - (a < 1 ? .13 : .05)).y += .22; }
-    ctx.fly(tgt.clone().addScaledVector(fwd, Math.cos(elv)*dist).add(new V3(0, Math.sin(elv)*dist, 0)), tgt, 1.2);
+    // the clear part of the screen: above the panel (phones, narrow windows), or left of it (wide screens, where it sits at the side)
+    const pr = playEl && !playEl.hidden ? playEl.getBoundingClientRect() : null, side = !!(pr && pr.height && pr.left > innerWidth*.45 && pr.top < innerHeight*.3);
+    const top = 64, bot = side ? innerHeight - 12 : pr && pr.height ? pr.top - 8 : innerHeight, rgt = side ? pr.left - 12 : innerWidth;
+    const free = THREE.MathUtils.clamp((bot - top)/innerHeight, .25, 1), freeX = THREE.MathUtils.clamp(rgt/innerWidth, .3, 1);
+    const a = innerWidth/innerHeight, vf = THREE.MathUtils.degToRad(ctx.camera.fov), hf = 2*Math.atan(Math.tan(vf/2)*a*freeX), table = match.view === 'table';
+    // the table view: lower and further back, so Ebun is across the board from you and the whole board is still in reach of a tap
+    // (closer when the view is wide, so the board doesn't shrink to a stamp)
+    const dist0 = table ? Math.max(.75, .26/Math.tan(hf/2)) : a < 1 ? .2/Math.tan(hf/2) : Math.max(.7, .28/Math.tan(hf/2));
+    // what has to fit: the near edge of the board, and its far edge (with Ebun's pieces) or Ebun's head
+    const near = C.clone().addScaledVector(fwd, BW/2), far = table ? ctx.figs.chess.head.getWorldPosition(new V3()).add(new V3(0, .14, 0)) : C.clone().addScaledVector(fwd, -BW/2).add(new V3(0, .08, 0));
+    const tgt = near.clone().add(far).multiplyScalar(.5), span = new V3(), pos = new V3();
+    // the board is near the wall: if backing off far enough to fit it all would put the camera in the wall, look down more steeply instead
+    let dist = dist0;
+    for (let elv = THREE.MathUtils.degToRad(table ? 30 : a < 1 ? 66 : 61); ; elv += .09){
+      const vd = fwd.clone().multiplyScalar(-Math.cos(elv)).add(new V3(0, -Math.sin(elv), 0));
+      span.copy(far).sub(near); span.addScaledVector(vd, -span.dot(vd));
+      dist = Math.max(dist0, (span.length()/2 + .02)/(Math.tan(vf/2)*free*.95))*match.zoom;
+      pos.copy(tgt).addScaledVector(fwd, Math.cos(elv)*dist).add(new V3(0, Math.sin(elv)*dist, 0));
+      if (!ctx.bounds || ctx.bounds.containsPoint(pos) || elv > 1.35) break;
+    }
+    // so the board sits in the middle of the clear space rather than the middle of the screen: slide the camera sideways
+    // (turning it would twist the board on screen), and tip it down a little
+    const yc = 1 - (top + bot)/innerHeight, xc = rgt/innerWidth - 1, d = tgt.clone().sub(pos), right = d.clone().cross(UP).normalize();
+    pos.addScaledVector(right, -xc*d.length()*Math.tan(vf/2)*a);
+    d.applyAxisAngle(right, -Math.atan(yc*Math.tan(vf/2))).normalize();
+    // the Room keeps the camera's target above the floor, so aim at the point where that line comes down to that height (and let the camera be that close to it)
+    const t = Math.min(dist, (pos.y - .2)/Math.max(.05, -d.y));
+    ctx.controls.minDistance = Math.min(ctx.controls.minDistance, t*.9);
+    ctx.fly(pos, pos.clone().addScaledVector(d, t), dur);
   }
+  // zoom: the wheel, a pinch, + and −, or the buttons by the move list
+  const playing = () => ctx.modes.current === mode && match.on;
+  function zoomBy(k, dur = .3){ const z = THREE.MathUtils.clamp(match.zoom*k, .55, 1.7); if (Math.abs(z - match.zoom) < 1e-3) return; match.zoom = z; frame(dur); }
+  const cv = ctx.renderer.domElement, tdist = e => Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+  let pinch = 0, pinchAt = -1e9;
+  cv.addEventListener('wheel', e => { if (!playing()) return; e.preventDefault(); zoomBy(Math.exp(THREE.MathUtils.clamp(e.deltaY, -120, 120)*.0015), .15); }, { passive:false });
+  cv.addEventListener('touchstart', e => { if (playing() && e.touches.length === 2) pinch = tdist(e); }, { passive:true });
+  cv.addEventListener('touchmove', e => { if (!pinch || e.touches.length !== 2) return; const d = tdist(e); zoomBy(pinch/d, .1); pinch = d; pinchAt = performance.now(); }, { passive:true });
+  cv.addEventListener('touchend', e => { if (e.touches.length < 2 && pinch){ pinch = 0; pinchAt = performance.now(); } }, { passive:true });
+  // when the panel changes height (a promotion, the end of the game), the board is fitted again
+  let panelH = 0;
+  if (playEl && 'ResizeObserver' in window) new ResizeObserver(() => { const h = playEl.offsetHeight; if (Math.abs(h - panelH) < 12) return; panelH = h; if (playing()) frame(.6); }).observe(playEl);
   // taps on the board
   const pickList = [top];
   function pointer(type, e, ray){
     if (type !== 'tap' || !match.on || match.state !== 'user') return type === 'tap';
+    if (performance.now() - pinchAt < 400) return true;   // (the finger left behind by a pinch isn't a tap)
     pickList.length = 1; for (const m of pieceAt) if (m) pickList.push(m);
     // the square under the tap on the board itself, and the first piece the tap touches (a tall piece can stand in front of the square you meant)
     const hits = ray.intersectObjects(pickList, false), ph = hits.find(h => h.object === top), pc = hits.find(h => h.object !== top);
@@ -314,7 +384,8 @@ export function createChess(ctx){
     exit(){ match.id++; match.on = false; match.state = 'off'; match.sel = -1; pending = null; marks(); movesEl = rowEl = body = null;
       if (!userWhite || game.result || game.moves.length){ userWhite = true; drawBoard(); game = new Game(); setup(true); idle.wait = 3; } },
     pointer, resize: () => match.on && frame(),
-    key(e){ if (e.key === 'Escape' && match.sel >= 0){ match.sel = -1; marks(); return true; } return false; },
+    key(e){ if (e.key === 'Escape' && match.sel >= 0){ match.sel = -1; marks(); return true; }
+      if (match.on && (e.key === '+' || e.key === '=')){ zoomBy(1/1.2); return true; } if (match.on && (e.key === '-' || e.key === '_')){ zoomBy(1.2); return true; } return false; },
   };
 
   /* ---------- while nobody is playing, Ebun plays both sides ---------- */

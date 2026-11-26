@@ -149,8 +149,8 @@ export function createPlant(ctx, { plantG, GARD }){
     id:'plant', lockCamera:true,
     enter(){
       S.on = true; S.pour = false; S.tilt = 0; S.aimSet = false; S.warned = 0; S.wasGood = zone() === 'good'; S.dryWarned = false; S.misses = 0; S.hits = 0;
-      // look in from the open side of the room, so the room is behind the plant and Joshua is beside it
-      S.dir.set(.8, 0, .6).normalize();
+      // look from inside the room, so the right wall is behind the plant and Joshua is beside it
+      S.dir.set(-1, 0, .45).normalize();
       S.right.set(0, 1, 0).cross(S.dir).normalize();   // the camera's right: the spout points that way
       room.attach(can); S.holding = true; aimAtPot(); S.at.copy(S.aim);
       open(); frame(1.1);
@@ -194,15 +194,8 @@ export function createPlant(ctx, { plantG, GARD }){
       if (tween.t < 1){ tween.t = Math.min(1, tween.t + dt/tween.dur); const k = tween.t, s = k*k*(3 - 2*k);
         can.position.lerpVectors(tween.from.p, tween.to.p, s); can.quaternion.slerpQuaternions(tween.from.q, tween.to.q, s);
         if (tween.t >= 1 && tween.done){ const d = tween.done; tween.done = null; d(); } }
-      // Joshua: with the can gone the arm comes down and the head follows it; the can goes back after
-      const want = S.holding && !S.ret ? 1 : 0; S.hand += (want - S.hand)*Math.min(1, dt*5); const k = S.hand;
-      if (S.on || S.ret || k > .02){
-        f.R.sh.rotation.set(THREE.MathUtils.lerp(f.base.sh, .05, k), 0, THREE.MathUtils.lerp(.12, .1, k)); f.R.el.rotation.set(THREE.MathUtils.lerp(-.65, -.12, k), 0, 0);
-        rose.getWorldPosition(v); f.neck.worldToLocal(v); v.y -= .1;
-        const yaw = THREE.MathUtils.clamp(Math.atan2(v.x, v.z), -.7, .7), pitch = THREE.MathUtils.clamp(-Math.atan2(v.y, Math.hypot(v.x, v.z)), -.4, .5);
-        f.head.rotation.y += (yaw*k - f.head.rotation.y)*Math.min(1, dt*6); f.head.rotation.x += (pitch*k - f.head.rotation.x)*Math.min(1, dt*6);
-        f.neck.rotation.x += (.42*(1 - k) + .1*k - f.neck.rotation.x)*Math.min(1, dt*6);
-      }
+      // Joshua: with the can gone the arm comes down and the head follows the can (the Room's Joshua code reads canFree); the can goes back after
+      const want = S.holding && !S.ret ? 1 : 0; S.hand += (want - S.hand)*Math.min(1, dt*5); f.canFree = S.hand;
     },
   };
 }

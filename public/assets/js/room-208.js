@@ -3,12 +3,13 @@ import * as THREE from '../vendor/three-0.160/three.module.min.js';
 import { OrbitControls } from '../vendor/three-0.160/OrbitControls.js';
 import { RoundedBoxGeometry } from '../vendor/three-0.160/RoundedBoxGeometry.js';
 import { mergeVertices, mergeGeometries } from '../vendor/three-0.160/BufferGeometryUtils.js';
-import { buildMember } from './figure-crew.js';
+import { buildMember, CREW } from './figure-crew.js';
 import { createChess } from './room-mode-chess.js';
 import { createCube } from './room-mode-cube.js';
 import { createPlant } from './room-mode-plant.js';
 import { createRun } from './room-mode-run.js';
 import { createBeat } from './room-mode-beat.js';
+import { createPhoto, createSketch } from './room-extras.js';
 
 // canvas textures use the brand fonts, so wait for them (briefly) before drawing
 await Promise.race([
@@ -25,74 +26,64 @@ const PEOPLE = [
     off:'EA Sports FC, NBA 2K and other games on weekends, chess now and then, long walks. Into philosophy, theology, tech and anime.',
     says:'looks good. ship it.',
     links:[ ['LinkedIn','https://www.linkedin.com/in/terence-bentem-gmnse-428715223/'], ['GitHub','https://github.com/Axtitan/'],
-            ['Dribbble','https://dribbble.com/Axtitan'], ['Portfolio','https://terencebentem.xyz/'] ],
-    look:{ skin:0x8a5638, hair:0x15120f } },
+            ['Dribbble','https://dribbble.com/Axtitan'], ['Portfolio','https://terencebentem.xyz/'] ] },
   { id:'pacer', name:'Michael', full:'Agyo Michael', role:'Mobile App Developer · Agentic AI Scripting',
     where:'Pacing the room, solving a Rubik’s cube. Doesn’t look up until it’s done.',
     body:'Building mobile and web apps since 2019. Proudest build: the blood donation app made for an undergraduate student.',
     off:'Writes poetry, watches anime, and never says no to a board game or a gaming session.',
     says:'almost… one more turn',
     links:[ ['LinkedIn','https://www.linkedin.com/in/michael-agyo-09014638b'], ['Instagram','https://www.instagram.com/michaelagyo7'],
-            ['GitHub','https://github.com/MikeTheExpert'], ['Blood Donor App', SITE + '/project-blood-donor-app.html'] ],
-    look:{ skin:0xa9633a, hair:0x1d1714 } },
+            ['GitHub','https://github.com/MikeTheExpert'], ['Blood Donor App', SITE + '/project-blood-donor-app.html'] ] },
   { id:'producer', name:'Wright', full:'Favour Wright Dickson', role:'Product Designer · Web Designer',
     where:'Edge of the bottom bunk, headphones on, building an Afrobeats loop in FL Studio.',
     body:'Designs and builds digital products, from UI and UX in Figma and Adobe XD to WordPress websites. Computer Engineering graduate of FUT Minna, NYSC at NCAIR Abuja, six NITDA certifications.',
     off:'Produces Afrobeats, plays Scrabble, Valorant and football sims, and teaches and volunteers at church.',
     says:'wait, listen to this beat',
     links:[ ['LinkedIn','https://www.linkedin.com/in/favour-wright-a2382a348'], ['X','https://x.com/SweetSounds002'],
-            ['Instagram','https://www.instagram.com/flavztunez/'], ['GitHub','https://github.com/GodsFavorite002'], ['Behance','https://www.behance.net/favourwright'] ],
-    look:{ skin:0xb06a3f, hair:0x1b1614 } },
+            ['Instagram','https://www.instagram.com/flavztunez/'], ['GitHub','https://github.com/GodsFavorite002'], ['Behance','https://www.behance.net/favourwright'] ] },
   { id:'gamer', name:'Joseph', full:'Joseph “Kotan” Tanko', role:'Music Producer · 3D & Digital Artist · Full-Stack Developer',
     where:'At the desk, headset on, deep in a competitive shooter.',
     body:'Producing hip-hop and trap for 4+ years and making computer graphics for about six, from game assets to web3 art. Now building a music and lyric writing app in Flutter.',
     off:'Competitive shooters, rapping and making music, working out.',
     says:'one more round, I swear',
     links:[ ['LinkedIn','https://www.linkedin.com/in/joseph-tanko-714507429'], ['X','https://x.com/soulesssK'],
-            ['Instagram','https://instagram.com/soulesssK'], ['GitHub','https://github.com/josephtanko'] ],
-    look:{ skin:0x9a6440, hair:0x15110e, hairStyle:'curly', expr:'grin', lid:.32, brows:'bold', nose:1.15, top:0xb8322c, bottom:0x2e3742, shoe:0xe9e6de, headphones:true, hood:true, print:true } },
+            ['Instagram','https://instagram.com/soulesssK'], ['GitHub','https://github.com/josephtanko'] ] },
   { id:'gardener', name:'Joshua', full:'Joshua “Cereal” Onu', role:'Full-Stack Developer',
     where:'By the plant stand, watering the plant again. It did not need it.',
     body:'Builds scalable fintech systems, secure backend architectures and cross-platform mobile apps. Node.js, REST APIs, auth, databases and React Native, with digital savings and installment-payment platforms behind him.',
     off:'Jogging, gardening and baking.',
     says:'it grew a new leaf!',
-    links:[ ['LinkedIn','https://www.linkedin.com/in/joshua-o-87490b280/'], ['GitHub','https://github.com/CerealJosh'], ['Portfolio','https://cerealjosh.github.io/Portfolio/'] ],
-    look:{ skin:0x6e432b, hair:0x0f0d0c, hairStyle:'buzz', expr:'smile', brows:'bold', nose:1.05, eyes:0x3a2214, top:0xd9d3c4, bottom:0x3a3f47, shoe:0x1b1b1b, apron:0x2f5d3a } },
+    links:[ ['LinkedIn','https://www.linkedin.com/in/joshua-o-87490b280/'], ['GitHub','https://github.com/CerealJosh'], ['Portfolio','https://cerealjosh.github.io/Portfolio/'] ] },
   { id:'artist', name:'Will', full:'Okereke Vincent “Will” Princewill', role:'Full-Stack Developer · Digital Artist',
-    where:'Sunk into the beanbag, sketchbook on his knees, drawing whoever walks in.',
+    where:'Sunk into the beanbag, sketchbook on the knees, drawing whoever walks in.',
     body:'Backend-focused engineer building APIs, scalable apps and distributed systems in Go and Python, and lately Rust. Has shipped a movie reservation platform, an image processing API, Stealth Assist and FeedBridge. Trained at NITDA/NCAIR, 3MTT and ALX.',
     off:'Drawing and sketching, manga and comics, basketball, video games, and testing free AI tools.',
     says:'hold still, I’m drawing you',
     links:[ ['LinkedIn','https://www.linkedin.com/in/princewill-okereke-341261145/'], ['X','https://x.com/DarkSummer44'], ['Instagram','https://www.instagram.com/dark_summer_vice/'],
-            ['GitHub','https://github.com/CrimsonKarma44'], ['Portfolio','https://will-dev-gamma.vercel.app'], ['Stealth Assist', SITE + '/project-stealth-assist.html'] ],
-    look:{ skin:0x8a5636, hair:0x0d0b0a, hairStyle:'short', expr:'smile', brows:'soft', nose:.95, eyes:0x2b1a10, top:0x6a2c3a, bottom:0x2c2f36, shoe:0xf2f0ea, hood:true } },
+            ['GitHub','https://github.com/CrimsonKarma44'], ['Portfolio','https://will-dev-gamma.vercel.app'], ['Stealth Assist', SITE + '/project-stealth-assist.html'] ] },
   { id:'scroller', name:'Gbolahan', full:'Gbolahan Adeola', role:'Penetration Tester',
     where:'Bottom bunk, phone up, doomscrolling new CVEs. It counts as research.',
     body:'Two years of testing web APIs and Android apps for security weaknesses. Known for finding authentication, authorization and data exposure flaws, and for clear reports that help developers fix them fast.',
     off:'Chess, sleeping and walking. Follows new exploits, CVEs and the cyber threat landscape.',
     says:'just one more scroll…',
-    links:[ ['LinkedIn','https://www.linkedin.com/in/gbolahan-adeola-2718b1387'] ],
-    look:{ skin:0xa15c35, hair:0x1c1614 } },
+    links:[ ['LinkedIn','https://www.linkedin.com/in/gbolahan-adeola-2718b1387'] ] },
   { id:'shooter', name:'Dewan', full:'Dewan Rotshak', role:'Brand Designer',
-    where:'Standing over the pizza box, camera out, shooting it for a mood board.',
+    where:'Somewhere in the room with the camera out: the pizza, the chess game, the plant, whatever makes a good shot for a mood board.',
     body:'Three years of brand design, treated as the problem of representation: not just a good-looking identity, but the design a brand actually needs to stand out in its market.',
     off:'Video games, football, cooking and exploring new places. Into content creation, photography, illustration and art.',
     says:'hold on, the lighting is perfect',
     links:[ ['LinkedIn','https://www.linkedin.com/in/rotshak-dewan-24b18037b/'], ['Instagram','https://www.instagram.com/dewan_3d/'],
-            ['GitHub','https://github.com/Dewan3d'], ['Behance','https://www.behance.net/sharkimagery_designs'] ],
-    look:{ skin:0x7a4a2e, hair:0x0e0c0b, hairStyle:'short', expr:'smile', brows:'bold', nose:1.0, eyes:0x2e1c10, top:0x2f6f73, bottom:0x2a2c31, shoe:0xf2f0ea, hood:true } },
+            ['GitHub','https://github.com/Dewan3d'], ['Behance','https://www.behance.net/sharkimagery_designs'] ] },
   { id:'chess', name:'Ebunrere', full:'Ebunrere Adebanjo', role:'Full-Stack Developer · Sales',
     where:'Cross-legged on the floor, playing both sides of a chess game. Still losing.',
     body:'Five years in software development and one in sales. Builds web and mobile products across backend systems, cloud and DevOps. Built the Lantees Cafe website and Crabble Club, worked with LEDVenture on mobile and web apps, and founded a startup.',
     off:'Running, chess and strategy games. Into AI, startups, fintech, game theory and systems thinking.',
     says:'checkmate… against myself',
-    links:[ ['LinkedIn','https://www.linkedin.com/in/ebunrere/'], ['GitHub','https://github.com/Dedigraz'] ],
-    look:{ skin:0x9a5734, hair:0x1a1513 } },
+    links:[ ['LinkedIn','https://www.linkedin.com/in/ebunrere/'], ['GitHub','https://github.com/Dedigraz'] ] },
   { id:'sleeper', name:'The Sleeper', placeholder:true, role:'Placeholder · saved for the next bio',
     where:'Top bunk. Asleep since the second episode.',
     body:'This bunk is saved for the next member. Each one gets a figure styled after them and an activity that fits how they spent time in the room.',
-    says:'five more minutes…',
-    look:{ skin:0xe0b48f, hair:0x111014, hairStyle:'swoop', expr:'smile', brows:'bold', nose:.85, eyes:0x4a2a17, top:0xe6e2d8, bottom:0x3b4a5c, shoe:0x2a2a28, hood:true } },
+    says:'five more minutes…' },
 ];
 const P = id => PEOPLE.find(p=>p.id === id);
 
@@ -126,22 +117,21 @@ $('stage').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b0b0a);
-const camera = new THREE.PerspectiveCamera(36, innerWidth/innerHeight, .1, 80);
+// inside the room the lens is wider: about 80 degrees across on a landscape screen, capped on tall phones
+function viewFov(){ const a = innerWidth/innerHeight; return THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad(40))/a)), 50, 76); }
+const camera = new THREE.PerspectiveCamera(viewFov(), innerWidth/innerHeight, .05, 40);
 
-const HOME_POS = new THREE.Vector3(6.2, 4.7, 6.6);
-const HOME_TARGET = new THREE.Vector3(-0.35, 0.7, -0.25);
-function homePos(){
-  const a = innerWidth/innerHeight;
-  const k = a < 1 ? 1 + (1 - a) * 2.2 : 1;
-  return HOME_TARGET.clone().add(HOME_POS.clone().sub(HOME_TARGET).multiplyScalar(k));
-}
+// home: up in the front-right corner by the door side, looking across the whole room
+const HOME_POS = new THREE.Vector3(2.7, 2.02, 2.3);
+const HOME_TARGET = new THREE.Vector3(-0.5, 0.62, -0.8);
+function homePos(){ return HOME_POS.clone(); }
 camera.position.copy(homePos());
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.copy(HOME_TARGET);
 controls.enableDamping = true; controls.dampingFactor = .08;
 controls.enablePan = false; controls.rotateSpeed = .6; controls.zoomSpeed = .8;
-const LIMITS = { minD:2.4, maxD:16, minP:.35, maxP:1.36, minA:.08, maxA:1.48 };
+const LIMITS = { minD:.7, maxD:7, minP:.3, maxP:1.52, minA:-Infinity, maxA:Infinity };   // the walls do the rest (keepInside)
 function strictLimits(on){
   controls.minDistance = on ? LIMITS.minD : .6;
   controls.maxDistance = on ? LIMITS.maxD : 6;
@@ -196,11 +186,14 @@ function makeTag(text, { bg = '#d6ff4b', color = '#0b0b0a' } = {}){
 function showTag(sp, f, v){
   if (f.speech?.sprite.visible) v = 0;
   sp.visible = v > .02; if (!sp.visible) return;
-  f.head.getWorldPosition(tagV); const k = THREE.MathUtils.clamp(camera.position.distanceTo(tagV)*.3, .2, .95);
+  f.head.getWorldPosition(tagV); const k = bubbleK(tagV);
   const x = Math.min(1, v*1.5) - 1, pop = 1 + 2.70158*x*x*x + 1.70158*x*x, h = k*.3*pop;
   sp.scale.set(h*sp.userData.aspect, h, 1); sp.position.set(tagV.x, tagV.y + .12 + k*.28 + h*.5, tagV.z); sp.material.opacity = Math.min(1, v*3);
 }
 const tagV = new THREE.Vector3();
+// how big a bubble or tag should be at that spot: a steady share of the screen, whatever the distance and the field of view
+// (a wide view on a phone or a square window shrinks everything, so the bubbles grow with it)
+function bubbleK(p, lo = .2){ return THREE.MathUtils.clamp(camera.position.distanceTo(p)*.3*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/Math.tan(THREE.MathUtils.degToRad(25)), lo, .95); }
 
 /* ---------- room shell ---------- */
 const W = 6, D = 5.2, H = 2.4;
@@ -253,11 +246,27 @@ plasterT.tex.wrapS = plasterT.tex.wrapT = THREE.RepeatWrapping; plasterT.tex.rep
 const wallM = mat(0xefbf98, { map:plasterT.tex, roughness:.95 });
 const WINS = [{ x:-.5, w:1.1 }, { x:1.33, w:1.0 }], WY0 = .98, WY1 = 2.06;
 const backShape = new THREE.Shape();
-backShape.moveTo(-W/2-.12,0); backShape.lineTo(W/2,0); backShape.lineTo(W/2,H); backShape.lineTo(-W/2-.12,H); backShape.lineTo(-W/2-.12,0);
+backShape.moveTo(-W/2-.12,0); backShape.lineTo(W/2+.12,0); backShape.lineTo(W/2+.12,H); backShape.lineTo(-W/2-.12,H); backShape.lineTo(-W/2-.12,0);
 for (const w of WINS){ const p = new THREE.Path(); p.moveTo(w.x-w.w/2,WY0); p.lineTo(w.x+w.w/2,WY0); p.lineTo(w.x+w.w/2,WY1); p.lineTo(w.x-w.w/2,WY1); p.lineTo(w.x-w.w/2,WY0); backShape.holes.push(p); }
 const backWall = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape,{ depth:.12, bevelEnabled:false }), wallM);
 backWall.position.z = -D/2-.12; backWall.castShadow = true; backWall.receiveShadow = true; room.add(backWall);
 const leftWall = at(box(.12,H,D,wallM), -W/2-.06, H/2, 0); room.add(leftWall);
+// the room is closed now: a right wall with the door to the corridor, a front wall with a third window, and a ceiling.
+// These don't cast the sun's shadow, so daylight still falls across the floor the way it did.
+const DOOR = { z:-1.82, z0:-2.25, z1:-1.39, h:1.95 }, FW = { x:-.3, w:1.2 };       // FW.x is in the front wall's own frame (x runs the other way)
+const rightShape = new THREE.Shape();
+rightShape.moveTo(-D/2-.12,0); rightShape.lineTo(DOOR.z0,0); rightShape.lineTo(DOOR.z0,DOOR.h); rightShape.lineTo(DOOR.z1,DOOR.h); rightShape.lineTo(DOOR.z1,0);
+rightShape.lineTo(D/2+.12,0); rightShape.lineTo(D/2+.12,H); rightShape.lineTo(-D/2-.12,H); rightShape.lineTo(-D/2-.12,0);
+const rightWall = new THREE.Mesh(new THREE.ExtrudeGeometry(rightShape,{ depth:.12, bevelEnabled:false }), wallM);
+rightWall.rotation.y = -Math.PI/2; rightWall.position.x = W/2+.12; rightWall.receiveShadow = true; room.add(rightWall);
+const frontShape = new THREE.Shape();
+frontShape.moveTo(-W/2-.12,0); frontShape.lineTo(W/2+.12,0); frontShape.lineTo(W/2+.12,H); frontShape.lineTo(-W/2-.12,H); frontShape.lineTo(-W/2-.12,0);
+{ const x0 = -FW.x - FW.w/2, x1 = -FW.x + FW.w/2, p = new THREE.Path(); p.moveTo(x0,WY0); p.lineTo(x1,WY0); p.lineTo(x1,WY1); p.lineTo(x0,WY1); p.lineTo(x0,WY0); frontShape.holes.push(p); }
+const frontWall = new THREE.Mesh(new THREE.ExtrudeGeometry(frontShape,{ depth:.12, bevelEnabled:false }), wallM);
+frontWall.position.z = D/2; frontWall.receiveShadow = true; room.add(frontWall);
+const ceilM = mat(0xf4efe7, { map:plasterT.tex, roughness:.95 });
+const ceilingSlab = at(box(W+.24,.1,D+.24,ceilM), 0,H+.05,0); ceilingSlab.receiveShadow = true; room.add(ceilingSlab);
+const corniceM = mat(0xf1e9dc, { roughness:.7 });
 const capM = mat(0xe7dccd);
 add(room, at(box(W+.12,.03,.14,capM), -.06,H+.015,-D/2-.06), at(box(.14,.03,D,capM), -W/2-.06,H+.015,0));
 // dado: painted lower wall with a rail, and a skirting board
@@ -266,18 +275,24 @@ const shellG = new THREE.Group(); room.add(shellG);
 add(shellG, at(box(W,.92,.012,dadoM), 0,.46,-D/2+.006), at(box(.012,.92,D,dadoM), -W/2+.006,.46,0),
   at(box(W,.035,.03,railM), 0,.93,-D/2+.015), at(box(.03,.035,D,railM), -W/2+.015,.93,0),
   at(box(W,.09,.025,skirtM), 0,.045,-D/2+.02), at(box(.025,.09,D,skirtM), -W/2+.02,.045,0));
+// the same dado on the front wall and on the right wall either side of the door, and a plaster cornice round the ceiling
+add(shellG, at(box(W,.92,.012,dadoM), 0,.46,D/2-.006), at(box(W,.035,.03,railM), 0,.93,D/2-.015), at(box(W,.09,.025,skirtM), 0,.045,D/2-.02));
+for (const [a, b] of [[-D/2, DOOR.z0 - .05], [DOOR.z1 + .05, D/2]]){ const L = b - a, c = (a + b)/2;
+  add(shellG, at(box(.012,.92,L,dadoM), W/2-.006,.46,c), at(box(.03,.035,L,railM), W/2-.015,.93,c), at(box(.025,.09,L,skirtM), W/2-.02,.045,c)); }
+add(shellG, at(box(W,.06,.06,corniceM), 0,H-.03,-D/2+.03), at(box(W,.06,.06,corniceM), 0,H-.03,D/2-.03), at(box(.06,.06,D,corniceM), -W/2+.03,H-.03,0), at(box(.06,.06,D,corniceM), W/2-.03,H-.03,0));
 
 // windows: aluminium frames, sliding panes, burglar-proof bars inside, a sill
 const aluM = mat(0xb9bcc0, { metalness:.6, roughness:.35 }), grilleM = mat(0x2a2a2e, { metalness:.5, roughness:.45 });
 const glassM = new THREE.MeshStandardMaterial({ color:0xcfe6f2, transparent:true, opacity:.14, roughness:.05, metalness:.1, depthWrite:false });
-for (const w of WINS){
+// a window in the back wall's frame of reference; the front window is the same build inside a group turned round
+function winFrame(w, shellG, dyn){
   const x0 = w.x - w.w/2, x1 = w.x + w.w/2, ym = (WY0 + WY1)/2, hh = WY1 - WY0, z = -D/2 - .06;
   add(shellG, at(box(w.w+.05,.04,.12,aluM), w.x,WY0,z), at(box(w.w+.05,.04,.12,aluM), w.x,WY1,z),
     at(box(.04,hh,.12,aluM), x0,ym,z), at(box(.04,hh,.12,aluM), x1,ym,z));
   for (const k of [0,1]){                                   // two sliding sashes, one a little behind the other
     const sx = w.x + (k ? .25 : -.25)*w.w, sz = z + (k ? -.025 : .015), sw = w.w/2 + .02;
     add(shellG, at(box(sw,.03,.025,aluM), sx,WY0+.035,sz), at(box(sw,.03,.025,aluM), sx,WY1-.035,sz), at(box(.03,hh-.06,.025,aluM), sx-sw/2,ym,sz), at(box(.03,hh-.06,.025,aluM), sx+sw/2,ym,sz));
-    const gl = new THREE.Mesh(new THREE.PlaneGeometry(sw-.03, hh-.08), glassM); gl.position.set(sx, ym, sz); room.add(gl);
+    const gl = new THREE.Mesh(new THREE.PlaneGeometry(sw-.03, hh-.08), glassM); gl.position.set(sx, ym, sz); dyn.add(gl);
   }
   const n = Math.round(w.w/.11);                            // bars: the shadows they throw are half the charm
   for (let i=1;i<n;i++) shellG.add(at(box(.014,hh,.014,grilleM), x0 + i*w.w/n, ym, -D/2 + .025));
@@ -285,10 +300,16 @@ for (const w of WINS){
   add(shellG, at(box(w.w+.1,.03,.05,grilleM), w.x, WY0+.015, -D/2+.03), at(box(w.w+.1,.03,.05,grilleM), w.x, WY1-.015, -D/2+.03));
   shellG.add(at(box(w.w+.2,.035,.13,railM), w.x, WY0-.02, -D/2+.065));
 }
+for (const w of WINS) winFrame(w, shellG, room);
+const frontG = new THREE.Group(); frontG.rotation.y = Math.PI; room.add(frontG);
+const frontStatic = new THREE.Group(); frontG.add(frontStatic);
+winFrame(FW, frontStatic, frontG);
 // the view out: trees and the hostel block across the way by day, a lit-up block and stars by night
-const outT = canvasTex(1024,512);
-function drawOutside(night){
-  const g = outT.ctx, w = 1024, h = 512, r = rng(9);
+const outT = canvasTex(1024,512), outT2 = canvasTex(1024,512);
+function drawOutside(night){ paintOutside(outT, night, 9, true); paintOutside(outT2, night, 23, false); }
+// block: the hostel block across the way (back windows); without it, the compound out front: a water tank, a fence, trees
+function paintOutside(T, night, seed, block){
+  const g = T.ctx, w = 1024, h = 512, r = rng(seed);
   const sky = g.createLinearGradient(0,0,0,h*.7);
   if (night){ sky.addColorStop(0,'#060914'); sky.addColorStop(1,'#1a2442'); } else { sky.addColorStop(0,'#7fb8ec'); sky.addColorStop(1,'#d9eef8'); }
   g.fillStyle = sky; g.fillRect(0,0,w,h);
@@ -296,39 +317,57 @@ function drawOutside(night){
     g.fillStyle = '#f4f0dc'; g.beginPath(); g.arc(w*.7,h*.16,22,0,7); g.fill(); g.fillStyle = 'rgba(244,240,220,.08)'; g.beginPath(); g.arc(w*.7,h*.16,46,0,7); g.fill(); }
   else for (let i=0;i<7;i++){ const cx = r()*w, cy = 30 + r()*90; g.fillStyle = 'rgba(255,255,255,.75)';
     for (let k=0;k<6;k++){ g.beginPath(); g.ellipse(cx + (k-3)*22 + r()*10, cy + r()*10, 30 + r()*24, 12 + r()*8, 0, 0, 7); g.fill(); } }
+  if (!block){
+    // the water tank on its stand, a low lecture hall far off, the compound fence
+    g.fillStyle = night ? '#141218' : '#d9cdb4'; g.fillRect(w*.08, h*.5, w*.5, h*.16); g.fillStyle = night ? '#100c10' : '#9b4a38'; g.fillRect(w*.06, h*.47, w*.54, h*.04);
+    for (let i=0;i<10;i++){ g.fillStyle = night ? (r()<.4 ? '#ffcf7a' : '#0c0b10') : '#7f97a6'; g.fillRect(w*.1 + i*w*.048, h*.55, w*.03, h*.05); }
+    g.fillStyle = night ? '#0d0d10' : '#6b6f75'; for (const lx of [.7,.82]) g.fillRect(w*lx, h*.3, 8, h*.4);
+    g.fillRect(w*.69, h*.45, w*.14, 6); g.fillStyle = night ? '#16161b' : '#2f5f8a'; g.fillRect(w*.67, h*.16, w*.18, h*.15);
+    g.fillStyle = night ? '#1b1b22' : '#3c74a6'; g.fillRect(w*.67, h*.16, w*.18, h*.025);
+    T.tex.needsUpdate = true;
+  }
   // the hostel block: cream walls, terracotta roof, rows of louvred windows
-  const bx = w*.18, bw = w*.62, by = h*.3, bh = h*.42;
+  const bx = w*.18, bw = block ? w*.62 : 0, by = h*.3, bh = h*.42;
+  if (block){
   g.fillStyle = night ? '#1d1a1e' : '#eadcc0'; g.fillRect(bx, by, bw, bh);
   g.fillStyle = night ? '#140f12' : '#b44a35'; g.beginPath(); g.moveTo(bx-18, by+4); g.lineTo(bx+30, by-40); g.lineTo(bx+bw-30, by-40); g.lineTo(bx+bw+18, by+4); g.fill();
   for (let f=0;f<3;f++) for (let i=0;i<9;i++){ const wx = bx + 22 + i*(bw-30)/9, wy = by + 22 + f*(bh-30)/3;
     g.fillStyle = night ? (r()<.55 ? (r()<.2 ? '#d6ff4b' : '#ffcf7a') : '#0c0b10') : '#8aa3b3'; g.fillRect(wx, wy, 34, 30);
     if (!night){ g.fillStyle = 'rgba(255,255,255,.4)'; for (let k=0;k<5;k++) g.fillRect(wx, wy+3+k*6, 34, 2); } }
+  }
   // trees in front: round canopies in three greens, darker trunks
   for (let i=0;i<16;i++){ const tx = (i/15)*w + (r()-.5)*40, ty = h*.62 + r()*40, tr = 50 + r()*45;
     g.fillStyle = night ? '#0a0d0a' : '#5a3a22'; g.fillRect(tx-5, ty, 10, h-ty);
     for (let k=0;k<7;k++){ g.fillStyle = night ? ['#0b120c','#0e170f','#08100a'][k%3] : ['#3f7a2f','#5d9b3f','#78b24e'][k%3];
       g.beginPath(); g.arc(tx + (r()-.5)*tr, ty - r()*tr*.8, tr*(.45 + r()*.35), 0, 7); g.fill(); } }
   g.fillStyle = night ? '#07090a' : '#5f8f3c'; g.fillRect(0, h*.9, w, h*.1);
-  outT.tex.needsUpdate = true;
+  if (!block){ g.fillStyle = night ? '#101214' : '#8d8f8a'; g.fillRect(0, h*.84, w, 5); for (let x=0;x<w;x+=26) g.fillRect(x, h*.8, 4, h*.1); }
+  T.tex.needsUpdate = true;
 }
 const outside = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), new THREE.MeshBasicMaterial({ map:outT.tex, toneMapped:false }));
 outside.position.set(.4, 1.3, -D/2 - 1.5); room.add(outside);
 outside.renderOrder = 2; Object.assign(outside.material, { stencilWrite:true, stencilRef:1, stencilFunc:THREE.EqualStencilFunc });
-for (const w of WINS){ const m = new THREE.Mesh(new THREE.PlaneGeometry(w.w, WY1-WY0), new THREE.MeshBasicMaterial({ colorWrite:false, depthWrite:false,
+function portal(w, parent){ const m = new THREE.Mesh(new THREE.PlaneGeometry(w.w, WY1-WY0), new THREE.MeshBasicMaterial({ colorWrite:false, depthWrite:false,
   stencilWrite:true, stencilRef:1, stencilFunc:THREE.AlwaysStencilFunc, stencilZPass:THREE.ReplaceStencilOp }));
-  m.position.set(w.x, (WY0+WY1)/2, -D/2 - .06); m.renderOrder = 1; room.add(m); }
+  m.position.set(w.x, (WY0+WY1)/2, -D/2 - .06); m.renderOrder = 1; parent.add(m); }
+for (const w of WINS) portal(w, room);
+portal(FW, frontG);
+const outside2 = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), new THREE.MeshBasicMaterial({ map:outT2.tex, toneMapped:false }));
+outside2.position.set(-.2, 1.3, -D/2 - 1.5); outside2.renderOrder = 2; Object.assign(outside2.material, { stencilWrite:true, stencilRef:1, stencilFunc:THREE.EqualStencilFunc }); frontG.add(outside2);
 // curtains: rust-brown, pleated, on a rod with finials
 const curtainM = mat(0x8e4a2c, { roughness:1, side:THREE.DoubleSide });
 const curtainGeo = (()=>{ const g = new THREE.PlaneGeometry(.36, 1.32, 24, 1), p = g.attributes.position;
   for (let i=0;i<p.count;i++){ const x = p.getX(i); p.setZ(i, .022*Math.sin(x/.36*Math.PI*2*3.5)); } g.computeVertexNormals(); return g; })();
 const curtains = [];
-for (const w of WINS){
+function curtainsFor(w, shellG, dyn){
   for (const s of [-1,1]){ const c = new THREE.Mesh(curtainGeo, curtainM); c.castShadow = true; c.receiveShadow = true;
-    const pivot = new THREE.Group(); pivot.position.set(w.x + s*(w.w/2 + .1), 2.18, -D/2 + .1); room.add(pivot); pivot.add(at(c, 0,-.66,0)); curtains.push(pivot); }
+    const pivot = new THREE.Group(); pivot.position.set(w.x + s*(w.w/2 + .1), 2.18, -D/2 + .1); dyn.add(pivot); pivot.add(at(c, 0,-.66,0)); curtains.push(pivot); }
   shellG.add(at(bar(V(w.x - w.w/2 - .32, 2.2, -D/2 + .1), V(w.x + w.w/2 + .32, 2.2, -D/2 + .1), .011, grilleM), 0,0,0));
   for (const s of [-1,1]) shellG.add(at(sph(.022, grilleM, 10, 8), w.x + s*(w.w/2 + .33), 2.2, -D/2 + .1));
 }
-bake(shellG);
+for (const w of WINS) curtainsFor(w, shellG, room);
+curtainsFor(FW, frontStatic, frontG);
+bake(shellG); bake(frontStatic);
 
 /* ---------- lights ---------- */
 const hemi = new THREE.HemisphereLight(0xfff3e4, 0x9a7a66, 1.45); scene.add(hemi);
@@ -510,11 +549,11 @@ let lampOn = true;
 const GAMER = { x:-.45, z:-1.6, yaw:Math.PI - .1 };
 const chair = new THREE.Group(); chair.position.set(GAMER.x,0,GAMER.z); chair.rotation.y = GAMER.yaw; room.add(chair);
 const chairM = mat(0x1d1d1a, { roughness:.6 });
-chair.add(at(cyl(.025,.025,.16,mat(0x2c2c2a,{metalness:.6,roughness:.3})), 0,.1,0));
+chair.add(at(cyl(.025,.025,.36,mat(0x2c2c2a,{metalness:.6,roughness:.3})), 0,.2,0));
 for (let i=0;i<5;i++){ const leg = at(box(.04,.025,.24,chairM), 0,.025,0); leg.rotation.y = i*Math.PI*2/5; leg.translateZ(.12); chair.add(leg); }
-chair.add(at(box(.48,.07,.46,chairM,.03), 0,.195,0));
-const back = at(box(.46,.6,.07,chairM,.03), 0,.52,-.24); back.rotation.x = -.12; chair.add(back);
-const piping = at(box(.012,.56,.075,glow(LIME)), .2,.52,-.24); piping.rotation.x = -.12; chair.add(piping);
+chair.add(at(box(.48,.07,.46,chairM,.03), 0,.42,0));
+const back = at(box(.46,.6,.07,chairM,.03), 0,.75,-.24); back.rotation.x = -.12; chair.add(back);
+const piping = at(box(.012,.56,.075,glow(LIME)), .2,.75,-.24); piping.rotation.x = -.12; chair.add(piping);
 const piping2 = piping.clone(); piping2.position.x = -.2; chair.add(piping2);
 
 function makeLaptop(screenTex){
@@ -560,13 +599,56 @@ const fridgeLight = new THREE.PointLight(0xe6f2ff, 0, 1.6, 2); fridgeLight.posit
 let fridgeOpen = false, fridgeAngle = 0;
 
 // door with room number
-const doorG = new THREE.Group(); doorG.position.set(2.42,0,-D/2+.03); room.add(doorG);
-doorG.add(at(box(.86,1.92,.04,railM), 0,.96,-.005));
-doorG.add(at(box(.76,1.86,.05,woodVM), 0,.93,.015));
-for (const [y,hh] of [[1.38,.62],[.52,.7]]) doorG.add(at(box(.56,hh,.012,mat(0xa8652f,{ roughness:.6 })), 0,y,.046));
-doorG.add(at(sph(.035,mat(0xc9c4b6,{metalness:.7,roughness:.3})), -.3,.92,.06));
+// (in the right wall now; the frame lines the opening, the leaf hangs on a hinge and swings into the room)
+const doorG = new THREE.Group(); doorG.position.set(W/2-.03,0,DOOR.z); doorG.rotation.y = -Math.PI/2; room.add(doorG);
+for (const sx of [-1,1]) doorG.add(at(box(.05,1.97,.17,railM), sx*.455,.985,-.075));
+doorG.add(at(box(.96,.05,.17,railM), 0,1.97,-.075));
+// (hinged on the back-wall side, so it opens against the wall and you see the corridor from the room)
+const hinge = new THREE.Group(); hinge.position.x = -.38; doorG.add(hinge);
+const leaf = new THREE.Group(); leaf.position.x = .38; hinge.add(leaf);
+leaf.add(at(box(.76,1.86,.05,woodVM), 0,.93,.015));
+for (const [y,hh] of [[1.38,.62],[.52,.7]]) leaf.add(at(box(.56,hh,.012,mat(0xa8652f,{ roughness:.6 })), 0,y,.046));
+const knobM = mat(0xc9c4b6,{metalness:.7,roughness:.3});
+leaf.add(at(sph(.035,knobM), .3,.92,.06), at(sph(.035,knobM), .3,.92,-.03));
+let doorOpen = false, doorA = 0;
 const plate = canvasTex(256,128,(g,w,h)=>{ g.fillStyle='#0b0b0a'; g.fillRect(0,0,w,h); g.fillStyle='#d6ff4b'; g.font='700 84px "Space Grotesk",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('208',w/2,h/2+4); });
-doorG.add(at(new THREE.Mesh(new THREE.PlaneGeometry(.26,.13), new THREE.MeshBasicMaterial({ map:plate.tex, toneMapped:false })), 0,1.62,.058));
+leaf.add(at(new THREE.Mesh(new THREE.PlaneGeometry(.26,.13), new THREE.MeshBasicMaterial({ map:plate.tex, toneMapped:false })), 0,1.62,.058));
+// the corridor outside: terrazzo floor, rooms 207 and 209 across the way, the notice board, a tube light.
+// It only draws while the door is open, and the camera never leaves the room, so this is all you ever see of it.
+const corridor = new THREE.Group(); corridor.visible = false; room.add(corridor);
+{
+  const CX0 = W/2+.12, CX1 = W/2+1.9, CZ0 = -4.6, CZ1 = 1.2, CH = 2.6, cw = CX1-CX0, cl = CZ1-CZ0, cx = (CX0+CX1)/2, cz = (CZ0+CZ1)/2;
+  const terr = canvasTex(256,256,(g,w,h)=>{ g.fillStyle = '#bdb7ac'; g.fillRect(0,0,w,h);
+    for (let i=0;i<1600;i++){ g.fillStyle = ['#8c877e','#ddd8cd','#6f6a63','#a8a194'][i%4]; g.fillRect(rand()*w, rand()*h, 1+rand()*3, 1+rand()*3); }
+    g.strokeStyle = 'rgba(60,55,50,.35)'; g.lineWidth = 2; g.strokeRect(0,0,w,h); });
+  terr.tex.wrapS = terr.tex.wrapT = THREE.RepeatWrapping; terr.tex.repeat.set(cw/.6, cl/.6);
+  const cf = new THREE.Mesh(new THREE.PlaneGeometry(cw, cl), mat(0xffffff,{ map:terr.tex, roughness:.4 })); cf.rotation.x = -Math.PI/2; cf.position.set(cx,.001,cz); corridor.add(cf);
+  const upM = mat(0xeee3cb,{ roughness:.95 }), lowM = mat(0x4f7a63,{ roughness:.6 }), trimM = mat(0xe9e0d2,{ roughness:.6 });
+  corridor.add(at(box(.1,CH-1.1,cl,upM), CX1+.05,1.1+(CH-1.1)/2,cz), at(box(.1,1.1,cl,lowM), CX1+.05,.55,cz), at(box(.03,.04,cl,trimM), CX1-.015,1.1,cz));
+  for (const z of [CZ0-.05, CZ1+.05]) corridor.add(at(box(cw+.2,CH,.1,upM), cx,CH/2,z));
+  corridor.add(at(box(cw+.2,.08,cl+.2,mat(0xf2ede4)), cx,CH+.04,cz));
+  // a window at the far end: daylight down the corridor
+  corridor.add(at(new THREE.Mesh(new THREE.PlaneGeometry(1,1.1), new THREE.MeshBasicMaterial({ color:0xcfe6f4, toneMapped:false })), cx,1.5,CZ0+.001));
+  // the doors across the way
+  const doorW = mat(0x7b4a2a,{ roughness:.6 });
+  for (const [z, n] of [[-3.3,'207'], [-.2,'209']]){
+    const d = new THREE.Group(); d.position.set(CX1,0,z); d.rotation.y = -Math.PI/2; corridor.add(d);
+    d.add(at(box(.9,2,.05,trimM), 0,1,-.01), at(box(.78,1.9,.04,doorW), 0,.95,.02), at(sph(.03,knobM), -.3,.95,.05));
+    const pl = canvasTex(128,64,(g,w,h)=>{ g.fillStyle = '#0b0b0a'; g.fillRect(0,0,w,h); g.fillStyle = '#f4f2ee'; g.font = '700 40px "Space Grotesk",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(n,w/2,h/2+2); });
+    d.add(at(new THREE.Mesh(new THREE.PlaneGeometry(.2,.1), new THREE.MeshBasicMaterial({ map:pl.tex, toneMapped:false })), 0,1.62,.045));
+  }
+  // the notice board, straight across from our door
+  const nb = canvasTex(512,320,(g,w,h)=>{ g.fillStyle = '#b8875a'; g.fillRect(0,0,w,h); g.fillStyle = '#c99a6b'; for (let i=0;i<300;i++) g.fillRect(rand()*w, rand()*h, 2, 2);
+    const notes = [['HALL WEEK','Fri · 7pm · bring a plate','#f4f2ee'], ['LOST','blue bucket, answers to "my bucket"','#ffd166'], ['NO COOKING','in rooms. The porter knows.','#ff8a7a'], ['FIFA NIGHT','Room 209 · winner stays on','#d6ff4b'], ['SELLING','mattress, barely slept on','#9fd3ff']];
+    notes.forEach(([t, b, c], i)=>{ const x = 18 + (i%3)*165, y = 18 + Math.floor(i/3)*150, a = (rand()-.5)*.08;
+      g.save(); g.translate(x+70,y+60); g.rotate(a); g.fillStyle = c; g.fillRect(-70,-60,140,120); g.fillStyle = '#1b1b1a'; g.font = '700 18px "Space Grotesk",sans-serif'; g.fillText(t,-60,-30);
+      g.font = '500 12px "Geist",sans-serif'; const words = b.split(' '); let line = '', ly = -6; for (const wd of words){ if (g.measureText(line + wd).width > 120){ g.fillText(line,-60,ly); line = ''; ly += 16; } line += wd + ' '; } g.fillText(line,-60,ly);
+      g.fillStyle = '#c0392b'; g.beginPath(); g.arc(0,-54,5,0,7); g.fill(); g.restore(); }); });
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(1.2,.75), mat(0xffffff,{ map:nb.tex, roughness:.9 })); board.position.set(CX1-.005,1.45,DOOR.z); board.rotation.y = -Math.PI/2; corridor.add(board);
+  corridor.add(at(box(.03,.79,1.24,trimM), CX1-.003,1.45,DOOR.z));
+  // the tube light down the middle
+  corridor.add(at(box(.07,.05,1.1,mat(0xf1efea)), cx,CH-.03,-1.8), at(box(.035,.02,1,new THREE.MeshBasicMaterial({ color:0xf6f8ff, toneMapped:false })), cx,CH-.06,-1.8));
+}
 // slides by the beds, sneakers by the door
 function slides(x, z, r, color){ const g = new THREE.Group(), sm = mat(0x1d1d22,{ roughness:.6 }), st = mat(color,{ roughness:.6 });
   for (const s of [-1,1]){ const f = new THREE.Group(); f.position.set(s*.065, 0, s*.02); f.rotation.y = s*.08; g.add(f);
@@ -578,7 +660,7 @@ room.add(at(box(.12,.07,.26,shoesM,.03), 2.15,.035,-2.05), at(box(.12,.07,.26,sh
 room.children.at(-1).rotation.y = .3;
 
 // light switch (clickable): flips the room between day and night
-const switchG = new THREE.Group(); switchG.position.set(2.93,1.05,-D/2+.008); room.add(switchG);
+const switchG = new THREE.Group(); switchG.position.set(W/2-.008,1.05,DOOR.z0-.2); switchG.rotation.y = -Math.PI/2; room.add(switchG);
 switchG.add(at(box(.09,.13,.012,mat(0xe9e6de)), 0,0,0));
 const toggle = at(box(.025,.045,.02,mat(0xd6ff4b)), 0,0,.012); switchG.add(toggle);
 
@@ -598,10 +680,11 @@ rotor.add(at(cyl(.1,.085,.07,fanMetal,24), 0,0,0), at(sph(.04,fanMetal,12,8), 0,
 for (let i=0;i<3;i++){ const arm = new THREE.Group(); arm.rotation.y = i*Math.PI*2/3; rotor.add(arm);
   arm.add(at(box(.14,.012,.04,fanMetal,.004), .14,0,0));
   const bl = at(box(.5,.008,.12,fanM,.004), .45,-.005,0); bl.rotation.x = .08; arm.add(bl); }
-let fanSpeed = 2, fanSpin = 0, fanAngle = 0;
+rotor.traverse(m=>{ if (m.isMesh) m.castShadow = false; });   // spinning blade shadows strobed across the floor
+let fanSpeed = 1, fanSpin = 0, fanAngle = 0;
 
 // wall clock (real time), over the door
-const clock = new THREE.Group(); clock.position.set(2.42,2.12,-D/2+.03); room.add(clock);
+const clock = new THREE.Group(); clock.position.set(W/2-.03,2.17,DOOR.z); clock.rotation.y = -Math.PI/2; room.add(clock);
 const rim = cyl(.13,.13,.035,mat(0x1d1d1a)); rim.rotation.x = Math.PI/2; clock.add(rim);
 const clockFace = canvasTex(256,256,(g,w,h)=>{ g.fillStyle='#f1eee5'; g.beginPath(); g.arc(w/2,h/2,w/2,0,Math.PI*2); g.fill();
   g.fillStyle='#1d1d1a'; for (let i=0;i<12;i++){ g.save(); g.translate(w/2,h/2); g.rotate(i*Math.PI/6); g.fillRect(-3,-112,6,i%3?14:24); g.restore(); }
@@ -679,7 +762,7 @@ const crate = studyDesk(); crate.position.set(2.27, 0, .45); crate.rotation.y = 
 const movie = canvasTex(256,160);
 const mLaptop = makeLaptop(movie.tex); mLaptop.position.set(2.25,.6,.7); mLaptop.rotation.y = -.75; room.add(mLaptop);
 const beanbag = sph(.45, mat(0x4a5d73,{roughness:1}), 24, 16); beanbag.scale.set(1,.5,.95); beanbag.position.set(1.95,.21,1.5); room.add(beanbag);
-const movieLight = new THREE.PointLight(0x8899ff, 1.3, 2.6, 2); movieLight.position.set(2.0,.85,.95); room.add(movieLight);
+const movieLight = new THREE.PointLight(0x8f9cff, .9, 2.4, 2);   // steady: a colour that cycled lit the walls in waves movieLight.position.set(2.0,.85,.95); room.add(movieLight);
 const bowl = at(cyl(.11,.07,.07,mat(0xd6ff4b)), 1.45,.035,1.25); room.add(bowl);
 for (let i=0;i<14;i++) room.add(at(sph(.022,mat(0xf6efd8)), 1.45+(rand()-.5)*.14,.075+rand()*.03,1.25+(rand()-.5)*.14));
 room.add(at(backpack(0x7a2430), .78, 0, -.62)); room.children.at(-1).rotation.y = -.5;
@@ -688,222 +771,6 @@ room.add(at(backpack(0x7a2430), .78, 0, -.62)); room.children.at(-1).rotation.y 
 [[0x3b4a5c,.0],[0xb5532e,.4],[0xe6e2d8,-.3]].forEach(([c,r],i)=>{ const p = box(.42,.05,.3,mat(c,{roughness:1}),.02); p.position.set(-1.72+i*.05,.025+i*.045,.32+i*.03); p.rotation.y = r; room.add(p); });
 
 
-/* ---------- figures: stylised 3D characters, built in code (no model files) ----------
-   look options for the real members:
-   skin, hair, top, bottom, shoe (colours)    eyes: iris colour
-   hairStyle: curly | short | swoop | long | buzz | bun | none
-   expr: grin | smile     lid: 0 wide open .. 1 shut (default .2)     brows: bold | soft     nose: size (1)
-   extras: hood (hoodie), print (208 on chest), glasses, headphones, beard, cap (colour) */
-const HEAD_R = .165, HEAD_Y = .2;
-function hash3(x,y,z){ let h = Math.imul(x,374761393) ^ Math.imul(y,668265263) ^ Math.imul(z,1274126177); h = Math.imul(h ^ (h>>>13), 1103515245); return ((h ^ (h>>>16))>>>0)/4294967295; }
-function vnoise(x,y,z){
-  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), s = t=>t*t*(3-2*t);
-  const u = s(x-xi), v = s(y-yi), w = s(z-zi), L = (a,b,t)=>a+(b-a)*t, c = (i,j,k)=>hash3(xi+i,yi+j,zi+k);
-  return L(L(L(c(0,0,0),c(1,0,0),u),L(c(0,1,0),c(1,1,0),u),v), L(L(c(0,0,1),c(1,0,1),u),L(c(0,1,1),c(1,1,1),u),v), w);
-}
-const sstep = (a,b,x)=>{ const t = Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
-// head shape: radius for a unit direction (x right, y up, z out of the face)
-function headR(x,y,z){
-  let r = 1/Math.sqrt(x*x + (y/1.14)**2 + (z/.97)**2);
-  const lo = Math.max(0,-y), side = x*x/(x*x+z*z+1e-4);
-  r *= 1 - .1*lo*lo*side;                                                        // jaw narrows at the sides
-  r *= 1 - .05*lo*lo*Math.max(0,-z);                                              // tucked under the back
-  r *= 1 + .05*Math.exp(-((Math.abs(x)-.5)**2 + (y+.24)**2 + (z-.74)**2)/.03);      // cheeks
-  r *= 1 - .035*Math.exp(-((Math.abs(x)-.37)**2 + (y-.17)**2)/.012)*Math.max(0,z);  // eye sockets
-  r *= 1 + .02*Math.exp(-((y-.4)**2)/.006)*Math.max(0,z)**2;                       // brow ridge
-  return r*HEAD_R;
-}
-// a point on the face: given x,y (relative to the head centre), find z on the surface
-function surfZ(x,y){
-  let a = 0, b = .32;
-  for (let i=0;i<24;i++){ const z = (a+b)/2, l = Math.hypot(x,y,z); (l <= headR(x/l,y/l,z/l) ? (a = z) : (b = z)); }
-  return a;
-}
-function surfN(x,y){
-  const e = .004, p = new THREE.Vector3(x,y,surfZ(x,y));
-  const px = new THREE.Vector3(x+e,y,surfZ(x+e,y)).sub(p), py = new THREE.Vector3(x,y+e,surfZ(x,y+e)).sub(p);
-  return { p, n:px.cross(py).normalize() };
-}
-function shapedSphere(seg, rad){
-  let g = new THREE.SphereGeometry(1, seg, Math.round(seg*.75));
-  g.deleteAttribute('normal'); g.deleteAttribute('uv'); g = mergeVertices(g);
-  const P = g.attributes.position, v = new THREE.Vector3();
-  for (let i=0;i<P.count;i++){ v.fromBufferAttribute(P,i).normalize(); v.multiplyScalar(rad(v.x,v.y,v.z)); P.setXYZ(i,v.x,v.y,v.z); }
-  g.computeVertexNormals(); return g;
-}
-// a strip that sits on the face between two curves: mouths, lips
-function faceStrip(w, yTop, curve, depth, thick, lift=.0016, nu=28, nv=5){
-  const pos = [], idx = [];
-  for (let i=0;i<=nu;i++){ const t = -1 + 2*i/nu, x = w*t, yt = yTop + curve*t*t, yb = yt - thick - depth*(1-t*t);
-    for (let j=0;j<=nv;j++){ const y = yt + (yb-yt)*j/nv, { p, n } = surfN(x,y); p.addScaledVector(n, lift); pos.push(p.x, p.y + HEAD_Y, p.z); } }
-  for (let i=0;i<nu;i++) for (let j=0;j<nv;j++){ const a = i*(nv+1)+j, b = a+nv+1; idx.push(a,a+1,b, b,a+1,b+1); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3)); g.setIndex(idx);
-  g.computeBoundingBox(); const c = g.boundingBox.getCenter(new THREE.Vector3()); g.translate(-c.x,-c.y,-c.z); g.computeVertexNormals();
-  return { g, c };
-}
-function onFace(mesh, x, y, lift){ const { p, n } = surfN(x,y); mesh.position.copy(p).addScaledVector(n, lift); mesh.position.y += HEAD_Y; mesh.lookAt(mesh.position.clone().add(n)); return mesh; }
-// hairline: how far down the hair comes at the front, sides and back
-function hairMask(x,y,z, front, side, back, soft=.05){
-  const a = Math.abs(Math.atan2(x,z))/Math.PI;
-  const thr = a < .5 ? front + (side-front)*sstep(0,1,a/.5) : side + (back-side)*sstep(0,1,(a-.5)/.5);
-  return sstep(thr-soft, thr+soft, y);
-}
-const HAIR = {
-  curly:{ line:[.8,.3,-.4], rough:.75, r:(x,y,z,m)=> m*(.12 + .055*vnoise(x*16+3,y*16,z*16) + .035*vnoise(x*34,y*34+7,z*34) - .02) },
-  short:{ line:[.82,.3,-.3], rough:.9, r:(x,y,z,m)=> m*(.045 + .012*vnoise(x*30,y*30,z*30)) },
-  buzz: { line:[.84,.3,-.25], rough:.95, r:(x,y,z,m)=> m*(.018 + .006*vnoise(x*40,y*40,z*40)) },
-  swoop:{ line:[.8,.25,-.42], rough:.42, r:(x,y,z,m)=> m*(.05 + .11*Math.exp(-((x-.2)**2/.16 + (y-.78)**2/.05 + (z-.5)**2/.14)) + .006*Math.sin(70*(x*.85 - z*.3 + y*.2))) },
-  long: { line:[.82,-.05,-1.1], rough:.5, r:(x,y,z,m)=> m*(.05 + .005*Math.sin(80*(x + .15*y))) },
-  bun:  { line:[.82,.28,-.4], rough:.6, r:(x,y,z,m)=> m*(.035 + .004*Math.sin(90*(x*.7 + y*.7))) },
-};
-let FIG_TEX = null;
-function knitTex(){ // shared fabric bump for clothes
-  if (FIG_TEX) return FIG_TEX;
-  const { tex } = canvasTex(128,128,(g,w,h)=>{ g.fillStyle='#808080'; g.fillRect(0,0,w,h);
-    for (let y=0;y<h;y+=4) for (let x=0;x<w;x+=4){ const v = 110 + ((x*7+y*13)%37); g.fillStyle=`rgb(${v},${v},${v})`; g.fillRect(x,y,3,3); } });
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3,3); tex.colorSpace = THREE.NoColorSpace; FIG_TEX = tex; return tex;
-}
-const LID_OPEN = -.95, LID_SHUT = .14;
-function makeFigure(o){
-  const knit = knitTex();
-  const skinC = new THREE.Color(o.skin);
-  const M = { skin:mat(o.skin,{ roughness:.52 }), lid:mat(skinC.clone().multiplyScalar(.9).getHex(),{ roughness:.55 }),
-    ear:mat(skinC.clone().multiplyScalar(.82).getHex(),{ roughness:.6 }),
-    hair:mat(o.hair,{ roughness:(HAIR[o.hairStyle]||HAIR.short).rough }), brow:mat(new THREE.Color(o.hair).lerp(new THREE.Color(0x222222),.35).getHex(),{ roughness:.7 }),
-    top:mat(o.blazer ?? o.top,{ bumpMap:knit, bumpScale:o.blazer ? .25 : .6, roughness:o.blazer ? .8 : .92 }), hoodie:mat(o.top,{ bumpMap:knit, bumpScale:.6, roughness:.92 }), bottom:mat(o.bottom,{ bumpMap:knit, bumpScale:.4 }), shoe:mat(o.shoe,{ roughness:.55 }),
-    sole:mat(o.sole ?? 0xf2efe8,{ roughness:.7 }), white:mat(0xf7f5f0,{ roughness:.22 }), iris:mat(o.eyes||0x3a2416,{ roughness:.3 }),
-    pupil:mat(0x050505,{ roughness:.2 }), mouth:mat(0x2a0f0c,{ roughness:.8 }), teeth:mat(0xfbfaf6,{ roughness:.3 }), dark:mat(0x111111,{ roughness:.35 }) };
-  const root = new THREE.Group(), hips = new THREE.Group(); root.add(hips);
-  hips.add(box(.3,.15,.19,M.bottom,.06));
-  const spine = new THREE.Group(); spine.position.y = .06; hips.add(spine);
-  const torso = at(new THREE.Mesh(new RoundedBoxGeometry(.35,.41,.21,5,.095), M.top), 0,.21,0); torso.castShadow = torso.receiveShadow = true; spine.add(torso);
-  if (o.blazer){
-    // open blazer: hoodie showing down the front, lapels either side, flap pockets
-    spine.add(at(box(.105,.25,.02,M.hoodie,.008), 0,.235,.098));
-    spine.add(at(box(.2,.07,.02,M.hoodie,.02), 0,.1,.1));                                    // hoodie pocket peeking under the jacket
-    const lapM = mat(new THREE.Color(o.blazer).multiplyScalar(.8).getHex(),{ roughness:.7 });
-    for (const s of [-1,1]){
-      const lp = at(box(.042,.2,.014,lapM,.006), s*.066,.27,.106); lp.rotation.z = s*.2; spine.add(lp);
-      spine.add(at(box(.075,.012,.018,lapM,.004), s*.105,.12,.105));
-      spine.add(at(sph(.007,mat(0x111111,{ roughness:.4 }),8,6), .058,.15-(s+1)*.03,.11));     // buttons
-    }
-  } else spine.add(at(box(.2,.09,.02,M.top,.02), 0,.11,.102));                                // front pocket
-  if (o.apron){ const am = mat(o.apron,{ roughness:.9 });
-    spine.add(at(box(.25,.3,.012,am,.01), 0,.17,.114), at(box(.012,.16,.01,am), -.07,.38,.1), at(box(.012,.16,.01,am), .07,.38,.1));
-    hips.add(at(box(.29,.24,.012,am,.01), 0,-.07,.104)); }
-  if (o.hood){
-    const hood = new THREE.Mesh(new THREE.TorusGeometry(.105,.045,10,28,Math.PI*1.5), M.hoodie);
-    hood.rotation.set(Math.PI/2,0,Math.PI*.25 + Math.PI/2); hood.position.set(0,.405,-.015); hood.scale.set(1.05,1,.9); hood.castShadow = true; spine.add(hood);
-    const sM = mat(0xeae6dc,{ roughness:.7 });
-    for (const s of [-1,1]){ const st = cyl(.006,.006,.12,sM,6); st.position.set(s*.045,.34,.108); spine.add(st, at(sph(.011,sM,8,6), s*.045,.278,.108)); }
-  }
-  if (o.print){ const t = canvasTex(128,64,(g,w,h)=>{ g.font='700 46px "Space Grotesk",sans-serif'; g.fillStyle='#d6ff4b'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('208',w/2,h/2+3); });
-    spine.add(at(new THREE.Mesh(new THREE.PlaneGeometry(.15,.075), new THREE.MeshBasicMaterial({ map:t.tex, transparent:true, toneMapped:false })), 0,.28,.107)); }
-  const neck = new THREE.Group(); neck.position.y = .42; spine.add(neck);
-  neck.add(at(cyl(.046,.05,.1,M.skin,14), 0,.0,0));
-  const head = new THREE.Group(); neck.add(head);
-
-  // skull
-  const skull = new THREE.Mesh(shapedSphere(64, headR), M.skin); skull.position.y = HEAD_Y; skull.castShadow = skull.receiveShadow = true; skull.userData.noPick = true; head.add(skull);
-  const proxy = new THREE.Mesh(new THREE.SphereGeometry(.2,10,8), new THREE.MeshBasicMaterial({ visible:false })); proxy.position.y = HEAD_Y; head.add(proxy);
-  // ears
-  for (const s of [-1,1]){
-    const e = at(sph(.042,M.skin,16,12), s*.158, HEAD_Y-.012, -.012); e.scale.set(.42,1,.72); e.rotation.y = s*.35; head.add(e);
-    const ie = at(sph(.03,M.ear,12,10), s*.172, HEAD_Y-.012, -.006); ie.scale.set(.22,.8,.55); ie.rotation.y = s*.35; head.add(ie);
-  }
-  // nose
-  { const ns = o.nose || 1, n = onFace(sph(.027*ns,M.skin,18,14), 0,-.032, .006*ns); n.scale.set(1.08,.86,.72); head.add(n); }
-  // eyes: eyeball, iris, pupil, glint, lids and lash line
-  const ER = .041, eyes = new THREE.Group(), irises = [], lids = [], glints = [];
-  head.add(eyes);
-  for (const s of [-1,1]){
-    const { p } = surfN(s*.067,.04), eg = new THREE.Group(); eg.position.set(p.x, p.y + HEAD_Y, p.z - .029); eyes.add(eg);
-    const ball = sph(ER,M.white,22,16); ball.castShadow = false; ball.userData.noPick = true; eg.add(ball);
-    const ig = new THREE.Group(); eg.add(ig); irises.push(ig);
-    const irisCap = new THREE.Mesh(new THREE.SphereGeometry(ER+.0006,24,6,0,Math.PI*2,0,.56), M.iris); irisCap.rotation.x = Math.PI/2; ig.add(irisCap);
-    const pupCap = new THREE.Mesh(new THREE.SphereGeometry(ER+.0012,20,4,0,Math.PI*2,0,.27), M.pupil); pupCap.rotation.x = Math.PI/2; ig.add(pupCap);
-    const glint = at(new THREE.Mesh(new THREE.SphereGeometry(.0042,8,6), glow(0xffffff)), -.008,.009,ER-.0005); ig.add(glint); glints.push(glint);
-    const lg = new THREE.Group(); eg.add(lg); lids.push(lg);
-    const lid = new THREE.Mesh(new THREE.SphereGeometry(ER*1.1,26,10,0,Math.PI*2,0,Math.PI*.56), M.lid); lid.castShadow = false; lg.add(lid);
-    const lash = new THREE.Mesh(new THREE.TorusGeometry(ER*1.1*Math.sin(Math.PI*.56),.0028,6,20,Math.PI), M.dark);
-    lash.rotation.x = Math.PI/2; lash.position.y = ER*1.1*Math.cos(Math.PI*.56); lg.add(lash);
-    const low = new THREE.Mesh(new THREE.SphereGeometry(ER*1.06,24,6,0,Math.PI*2,0,Math.PI*.22), M.lid); low.rotation.x = Math.PI - .3; eg.add(low);
-    // brows
-    const bold = (o.brows || 'bold') === 'bold';
-    const br = onFace(new THREE.Mesh(new RoundedBoxGeometry(bold ? .074 : .068, bold ? .022 : .013, .016, 3, bold ? .007 : .005), M.brow), s*.068, .104, .006);
-    br.rotateZ(s * (bold ? -.06 : -.12)); br.castShadow = false; head.add(br);
-  }
-  const lidRest = Math.min(LID_SHUT - .2, LID_OPEN + (o.lid ?? .05) * 1.9);
-  // mouth
-  let mouth, mouthOpen;
-  if ((o.expr || 'smile') === 'grin'){
-    mouth = new THREE.Group();
-    const lip = faceStrip(.084, -.074, .021, .049, .0045); const lipM = new THREE.Mesh(lip.g, M.mouth); lipM.position.copy(lip.c); mouth.add(lipM);
-    const te = faceStrip(.08, -.076, .02, .044, .004, .0026); const teM = new THREE.Mesh(te.g, M.teeth); teM.position.copy(te.c); mouth.add(teM);
-    const gap = faceStrip(.07, -.097, .012, .0, .0022, .0034); const gM = new THREE.Mesh(gap.g, mat(0xd9d4c9,{ roughness:.5 })); gM.position.copy(gap.c); mouth.add(gM);
-  } else {
-    const ln = faceStrip(.045, -.083, .01, .007, .0045); mouth = new THREE.Mesh(ln.g, M.mouth); mouth.position.copy(ln.c);
-  }
-  { const op = faceStrip(.06, -.074, .012, .05, .008); mouthOpen = new THREE.Group(); mouthOpen.position.copy(op.c);
-    mouthOpen.add(new THREE.Mesh(op.g, M.mouth));
-    const tt = faceStrip(.048, -.076, .011, .0, .009, .0026); const ttM = new THREE.Mesh(tt.g, M.teeth); ttM.position.copy(tt.c).sub(op.c); mouthOpen.add(ttM);
-    mouthOpen.visible = false; }
-  mouth.traverse(m=>{ if (m.isMesh){ m.castShadow = false; m.userData.noPick = true; } });
-  mouthOpen.traverse(m=>{ if (m.isMesh){ m.castShadow = false; m.userData.noPick = true; } });
-  head.add(mouth, mouthOpen);
-  // hair
-  const hs = o.hairStyle || 'short', H = HAIR[hs];
-  if (H){
-    const [fr,sd,bk] = H.line;
-    const hair = new THREE.Mesh(shapedSphere(88, (x,y,z)=>{ const m = hairMask(x,y,z,fr,sd,bk); return headR(x,y,z)*(.975 + m*.035 + H.r(x,y,z,m)); }), M.hair);
-    hair.position.y = HEAD_Y; hair.castShadow = true; hair.userData.noPick = true; head.add(hair);
-    if (hs === 'long'){ const d = at(sph(.17,M.hair,24,18), 0,HEAD_Y-.06,-.075); d.scale.set(1.02,1.25,.62); head.add(d); }
-    if (hs === 'bun'){ head.add(at(sph(.07,M.hair,18,14), 0,HEAD_Y+.17,-.1)); }
-  }
-  if (o.beard){
-    const beard = new THREE.Mesh(shapedSphere(64,(x,y,z)=>{ const m = (1-sstep(-.5,-.3,y))*sstep(-.3,.1,z)*(1-Math.exp(-(x*x/.03 + (y+.55)**2/.02)));
-      return headR(x,y,z)*(.97 + m*(.06 + .03*vnoise(x*30,y*30,z*30))); }), M.hair);
-    beard.position.y = HEAD_Y; beard.userData.noPick = true; head.add(beard);
-  }
-  if (o.cap){ const cm = mat(o.cap);
-    const c = new THREE.Mesh(shapedSphere(48,(x,y,z)=>{ const m = sstep(.28,.36,y); return headR(x,y,z)*(.97 + m*.1); }), cm); c.position.y = HEAD_Y; head.add(c);
-    head.add(at(box(.22,.018,.13,cm,.008), 0,HEAD_Y+.105,.17)); }
-  const topY = HEAD_Y + headR(0,1,0)*(1 + (H ? H.r(0,1,0,1) + .035 : 0));
-  if (o.glasses){ const gm = mat(0x0b0b0a,{ roughness:.4 });
-    for (const s of [-1,1]){ const { p } = surfN(s*.067,.04); const r = new THREE.Mesh(new THREE.TorusGeometry(.047,.006,8,28), gm); r.position.set(p.x, p.y+HEAD_Y, p.z+.024); head.add(r); }
-    const { p } = surfN(0,.05); head.add(at(box(.04,.008,.008,gm), 0,p.y+HEAD_Y+.004,p.z+.022)); }
-  if (o.headphones){ const hm = mat(0x1d1d1a,{ roughness:.4 }), rad = Math.max(.2, topY - HEAD_Y + .02);
-    const band = new THREE.Mesh(new THREE.TorusGeometry(rad,.016,8,32,Math.PI), hm); band.position.y = HEAD_Y; band.scale.x = .19/rad*1.02; head.add(band);
-    for (const s of [-1,1]){ const cup = cyl(.06,.06,.05,hm); cup.rotation.z = Math.PI/2; cup.position.set(s*.19,HEAD_Y-.01,-.01); head.add(cup);
-      const ring = cyl(.061,.061,.012,glow(LIME)); ring.rotation.z = Math.PI/2; ring.position.set(s*.216,HEAD_Y-.01,-.01); head.add(ring); } }
-  // arms: sleeves, cuffs, hands
-  function arm(side){
-    const sh = new THREE.Group(); sh.position.set(side*.2,.36,0); spine.add(sh);
-    const up = new THREE.Mesh(new THREE.CapsuleGeometry(.055,.13,4,12), M.top); up.position.y = -.09; up.castShadow = true; sh.add(up);
-    const el = new THREE.Group(); el.position.y = -.2; sh.add(el);
-    const lo = new THREE.Mesh(new THREE.CapsuleGeometry(.05,.11,4,12), M.top); lo.position.y = -.08; lo.castShadow = true; el.add(lo);
-    el.add(at(cyl(.047,.047,.025,M.hoodie,14), 0,-.165,0));
-    const hand = at(sph(.05,M.skin,16,12), 0,-.205,0); hand.scale.set(.95,1.08,.82); el.add(hand);
-    el.add(at(sph(.02,M.skin,10,8), -side*.035,-.19,.025));
-    return { sh, el, hand };
-  }
-  function leg(side){
-    const hp = new THREE.Group(); hp.position.set(side*.085,-.04,0); hips.add(hp);
-    const up = new THREE.Mesh(new THREE.CapsuleGeometry(.066,.12,4,12), M.bottom); up.position.y = -.11; up.castShadow = true; hp.add(up);
-    const kn = new THREE.Group(); kn.position.y = -.22; hp.add(kn);
-    const lo = new THREE.Mesh(new THREE.CapsuleGeometry(.06,.11,4,12), M.bottom); lo.position.y = -.09; lo.castShadow = true; kn.add(lo);
-    kn.add(at(box(.13,.075,.22,M.shoe,.035), 0,-.205,.045), at(box(.135,.025,.225,M.sole,.01), 0,-.245,.045));
-    return { hp, kn };
-  }
-  const f = { root, hips, spine, torso, neck, head, eyes, pupils:new THREE.Group(), mouth, mouthOpen, L:arm(1), R:arm(-1), LL:leg(1), RL:leg(-1),
-              blinkEvery: 3 + rand()*3, blinkOff: rand()*5, lookW: 0, closed:false };
-  f.setClosed = c => { f.closed = c; for (const l of lids) l.rotation.x = c ? LID_SHUT : lidRest; for (const g of glints) g.visible = !c; };
-  // gaze follows f.pupils (set by the animation code)
-  f.sync = () => { const gx = THREE.MathUtils.clamp(f.pupils.position.x*42,-.5,.5), gy = THREE.MathUtils.clamp(-f.pupils.position.y*30,-.3,.3);
-    for (const ig of irises){ ig.rotation.y = gx; ig.rotation.x = gy; } };
-  f.setClosed(false);
-  return f;
-}
 function makeBubble(text){
   const { tex } = canvasTex(640,150,(g,w,h)=>{
     g.font = '500 44px "Geist", sans-serif'; const tw = Math.min(w-40, g.measureText(text).width + 64), x = (w-tw)/2;
@@ -916,34 +783,6 @@ function makeBubble(text){
 }
 const figs = {};
 
-// gamer: seated in the chair, controller in hand
-{
-  const f = makeFigure(P('gamer').look); figs.gamer = f;
-  f.root.position.set(GAMER.x, .3, GAMER.z); f.root.rotation.y = GAMER.yaw;
-  for (const l of [f.LL,f.RL]){ l.hp.rotation.x = -Math.PI/2; l.kn.rotation.x = Math.PI/2; }
-  f.LL.hp.rotation.y = .12; f.RL.hp.rotation.y = -.12;
-  f.spine.rotation.x = .14; f.neck.rotation.x = .12;
-  f.base = { sh:-.78, el:-1.5 };
-  f.L.sh.rotation.set(f.base.sh,0,-.45); f.R.sh.rotation.set(f.base.sh,0,.45);
-  const pad = new THREE.Group(); pad.position.set(0,.25,.34); f.spine.add(pad); f.pad = pad;
-  const padM = mat(0x1d1d1a,{ roughness:.4 });
-  pad.add(at(box(.2,.05,.1,padM,.02), 0,0,0), at(box(.07,.05,.11,padM,.025), -.09,-.015,-.02), at(box(.07,.05,.11,padM,.025), .09,-.015,-.02));
-  pad.add(at(sph(.012,glow(LIME)), .05,.03,.01), at(sph(.012,glow(0xff5e7e)), .07,.03,-.01));
-  room.add(f.root);
-  f.gg = makeTag('GG'); room.add(f.gg);
-}
-// sleeper: lying on the top bunk under a blanket
-{
-  const f = makeFigure(P('sleeper').look); figs.sleeper = f;
-  f.root.rotation.x = -Math.PI/2;
-  f.root.position.set(bunkA.position.x, BUNK.upperTop + .11, bunkA.position.z + .2);
-  f.neck.rotation.x = .3; f.setClosed(true);
-  f.L.sh.rotation.set(-2.6,0,-.5); f.L.el.rotation.x = -1.6;
-  f.R.sh.rotation.set(-.15,0,.12);
-  f.LL.hp.rotation.x = -.55; f.LL.kn.rotation.x = 1.0;
-  room.add(f.root);
-  f.zzz = [0,1,2].map(i=>{ const s = textSprite('z', { color:'#f4f2ee', size:.16, font:'700 96px "Space Grotesk", sans-serif' }); room.add(s); return s; });
-}
 // The crew figures (figure-crew.js): cartoon models from their character sheets, to scale (1.75 m stands 1.33 here), each driven by its own clips.
 // Clicks land on a few invisible boxes on the bones, not on the skinned meshes
 const hitGeo = new THREE.BoxGeometry(1,1,1), hitMat = new THREE.MeshBasicMaterial({ visible:false });
@@ -957,10 +796,27 @@ function crewFig(id, x, y, z, yaw, clip){
   root.position.set(x, y, z); root.rotation.y = yaw; room.add(root);
   if (clip) t.act[clip].play();
   t.mixer.update(0);
-  return { root, head:t.head, lookW:0, glb:true, t, scale:.76*t.height/1.75 };
+  return { root, head:t.head, lookW:0, t, spec:CREW[id], scale:.76*t.height/1.75 };
 }
 // a damped spring: eases a value to its goal with no jolt at the start and no overshoot at the end
 const spring = (o, k, goal, w0, dt) => { const vk = k + 'V'; o[vk] = (o[vk] || 0) + (w0*w0*(goal - o[k]) - 2*w0*(o[vk] || 0))*dt; o[k] += o[vk]*dt; };
+const dirOf = (q, x, y, z) => new THREE.Vector3(x, y, z).applyQuaternion(q);   // a direction in someone's own frame, out in the room
+
+// Joseph: in the gaming chair at the desk, the pad in both hands, eyes on the laptop
+{
+  const f = crewFig('joseph', GAMER.x, 0, GAMER.z, GAMER.yaw, 'Game'); figs.gamer = f; f.t.hand('L', 'grip'); f.t.hand('R', 'grip');
+  const pad = new THREE.Group(); f.pad = pad;
+  const padM = mat(0x1d1d1a,{ roughness:.4 });
+  pad.add(at(box(.2,.05,.1,padM,.02), 0,0,0), at(box(.07,.05,.11,padM,.025), -.09,-.015,-.02), at(box(.07,.05,.11,padM,.025), .09,-.015,-.02));
+  pad.add(at(sph(.012,glow(LIME)), .05,.03,.01), at(sph(.012,glow(0xff5e7e)), .07,.03,-.01));
+  f.t.anchor('handL', f.t.props.pad.p, pad, f.t.props.pad.q);
+  f.gg = makeTag('GG'); room.add(f.gg);
+}
+// The Sleeper: flat out on the top bunk, eyes shut
+{
+  const f = crewFig('sleeper', bunkA.position.x, BUNK.upperTop, bunkA.position.z - .15, 0, 'Sleep'); figs.sleeper = f; f.t.eyes(1); f.t.hand('L', 'relax'); f.t.hand('R', 'relax');
+  f.zzz = [0,1,2].map(i=>{ const s = textSprite('z', { color:'#f4f2ee', size:.16, font:'700 96px "Space Grotesk", sans-serif' }); room.add(s); return s; });
+}
 
 // Gbolahan: lying back on the bottom bunk, one knee up, scrolling a phone
 {
@@ -974,8 +830,7 @@ const spring = (o, k, goal, w0, dt) => { const vk = k + 'V'; o[vk] = (o[vk] || 0
   f.lol = makeTag('lol', { bg:'#f4f2ee' }); room.add(f.lol);
 }
 // Michael: pacing between the bunks and the rug, solving a Rubik's cube
-const PACE = { a:new THREE.Vector3(-1.25,0,-.5), b:new THREE.Vector3(-.4,0,1.72) };
-const STAND = .52;   // hip height of the older figures (their root sits at the hips)
+const PACE = { a:new THREE.Vector3(-1.25,0,-.5), b:new THREE.Vector3(-.4,0,1.72), w:new THREE.Vector3(.15,0,1.97) }, cubeV = new THREE.Vector3();   // w: beside the chess, to watch
 function makeCube(){
   const g = new THREE.Group(), step = .0275, sz = .026;
   const core = mat(0x0d0d0d,{ roughness:.45 });
@@ -983,7 +838,7 @@ function makeCube(){
   const sm = {}; for (const k in COL) sm[k] = mat(COL[k],{ roughness:.35 });
   const sGeo = new THREE.PlaneGeometry(sz*.82, sz*.82), cubies = [];
   for (let x=-1;x<=1;x++) for (let y=-1;y<=1;y++) for (let z=-1;z<=1;z++){
-    const c = new THREE.Group(); c.position.set(x*step,y*step,z*step); g.add(c); cubies.push(c);
+    const c = new THREE.Group(); c.position.set(x*step,y*step,z*step); c.userData.home = c.position.clone(); g.add(c); cubies.push(c);
     const b = new THREE.Mesh(new RoundedBoxGeometry(sz,sz,sz,2,.003), core); c.add(b);
     const face = (key, axis, sign) => { const m = new THREE.Mesh(sGeo, sm[key]); m.position[axis] = sign*(sz/2+.0004);
       if (axis==='x') m.rotation.y = sign*Math.PI/2; if (axis==='y') m.rotation.x = -sign*Math.PI/2; if (sign<0 && axis==='z') m.rotation.y = Math.PI; c.add(m); };
@@ -1028,6 +883,8 @@ function cubeTurn(cb, dt){
   const f = crewFig('agyo', PACE.a.x, 0, PACE.a.z, 0); figs.pacer = f; f.t.hand('L', 'grip'); f.t.hand('R', 'grip');
   f.t.act.CubeIdle.play(); f.t.act.CubeWalk.play(); f.t.act.CubeIdle.setEffectiveWeight(0); f.t.act.Idle.play(); f.t.act.Idle.setEffectiveWeight(0); f.hand = 0;
   f.cube = makeCube(); f.cube.g.scale.setScalar(.8); f.cube.g.position.set(0, -.105, .27); f.cube.g.rotation.set(.35, .2, 0); f.t.bones.chest.add(f.cube.g);
+  // the second cube, for racing you: it only comes out while you race (the race mode turns it)
+  f.cube2 = makeCube(); f.cube2.g.scale.setScalar(.8); f.cube2.g.position.copy(f.cube.g.position); f.cube2.g.rotation.copy(f.cube.g.rotation); f.cube2.g.visible = false; f.t.bones.chest.add(f.cube2.g);
   f.walk = { to:'b', state:'walk', turnT:0, yaw:0 }; f.spd = .42; f.gait = 1; f.face = 0;
   f.stride = 4*.785*Math.sin(.34)*f.scale;            // ground covered per cycle of the walk clip
   { const d = PACE.b.clone().sub(PACE.a); f.walk.yaw = Math.atan2(d.x, d.z); f.root.rotation.y = f.walk.yaw; }
@@ -1075,44 +932,30 @@ const plantG = new THREE.Group(); plantG.position.copy(GARD.plant); room.add(pla
   const sprout = at(sph(.03,mat(0x8fd14f,{ roughness:.5 }),12,8), 0,.3,0); sprout.scale.set(.6,.2,1); leaves.add(sprout); plantG.sprout = sprout;
 }
 {
-  const f = makeFigure(P('gardener').look); figs.gardener = f;
-  f.root.position.set(GARD.x, STAND, GARD.z);
-  f.root.rotation.y = Math.atan2(GARD.plant.x - GARD.x, GARD.plant.z - GARD.z);
-  f.base = { sh:-.95 };
-  f.R.sh.rotation.set(f.base.sh,0,.12); f.R.el.rotation.set(-.65,0,0);
-  f.L.sh.rotation.set(.06,0,-.1); f.L.el.rotation.set(-.15,0,0);
+  const f = crewFig('joshua', GARD.x, 0, GARD.z, Math.atan2(GARD.plant.x - GARD.x, GARD.plant.z - GARD.z), 'Idle'); figs.gardener = f; f.t.hand('R', 'grip');
   const cm = mat(0x3f7f9e,{ roughness:.35, metalness:.3 }), can = new THREE.Group();
   can.add(cyl(.07,.075,.13,cm,20));
   const sp = cyl(.011,.018,.2,cm,10); sp.position.set(0,.03,.147); sp.rotation.x = 1.05; can.add(sp);
   const rose = at(cyl(.03,.012,.03,cm,10), 0,.079,.233); rose.rotation.x = 1.05; can.add(rose);
   const hd = new THREE.Mesh(new THREE.TorusGeometry(.055,.01,8,20,Math.PI), cm); hd.position.set(0,.065,-.02); hd.rotation.y = Math.PI/2; can.add(hd);
-  const canP = new THREE.Group(); canP.position.set(-.17,.25,.36); canP.rotation.y = .55; f.spine.add(canP); canP.add(can);
-  f.can = can; f.rose = rose;
+  // the can hangs at Joshua's right side, spout turned in toward the pot; the right hand holds its handle (below), and the plant mode takes it from here
+  const canP = new THREE.Group(); canP.position.copy(f.root.position).add(dirOf(f.root.quaternion, -.16, .6, .26)); canP.rotation.y = f.root.rotation.y + .55; canP.scale.setScalar(.85); room.add(canP); canP.add(can);
+  f.can = can; f.rose = rose; f.canFree = 0;
   const dropM = new THREE.MeshBasicMaterial({ color:0xa8d8ff, transparent:true, opacity:.85, toneMapped:false });
   f.drops = [...Array(7)].map(()=>{ const d = new THREE.Mesh(new THREE.SphereGeometry(.007,6,4), dropM); d.visible = false; room.add(d); return d; });
-  f.neck.rotation.x = .42;
-  room.add(f.root);
 }
 // Will: sunk into the beanbag, sketching
 const ART = { yaw:.5 };
 {
-  const f = makeFigure(P('artist').look); figs.artist = f;
-  f.root.position.set(beanbag.position.x - Math.sin(ART.yaw)*.1, .44, beanbag.position.z - Math.cos(ART.yaw)*.1); f.root.rotation.y = ART.yaw;
-  for (const l of [f.LL,f.RL]){ l.hp.rotation.x = -1.3; l.kn.rotation.x = 1.55; }
-  f.LL.hp.rotation.y = .1; f.RL.hp.rotation.y = -.1;
-  f.spine.rotation.x = -.32;
-  f.base = { neck:.62, el:-1.25, rz:.28 };
-  f.neck.rotation.x = f.base.neck;
-  f.L.sh.rotation.set(-.35,0,-.32); f.L.el.rotation.set(-1.3,0,0);
-  f.R.sh.rotation.set(-.42,0,f.base.rz); f.R.el.rotation.set(f.base.el,0,0);
-  const book = new THREE.Group(); book.position.set(0,.1,.27); book.rotation.x = -.95; f.hips.add(book);
+  const f = crewFig('will', beanbag.position.x - Math.sin(ART.yaw)*.12, 0, beanbag.position.z - Math.cos(ART.yaw)*.12, ART.yaw, 'Sketch'); figs.artist = f; f.t.hand('L', 'grip'); f.t.hand('R', 'pinch');
+  const book = new THREE.Group();
   book.add(at(box(.22,.012,.29,mat(0x1d1d1f,{ roughness:.6 }),.004), 0,0,0));
   const pageT = canvasTex(128,168); f.pageT = pageT;
   const page = new THREE.Mesh(new THREE.PlaneGeometry(.2,.27), new THREE.MeshStandardMaterial({ map:pageT.tex, roughness:.9 }));
   page.rotation.x = -Math.PI/2; page.rotation.z = Math.PI; page.position.y = .0065; book.add(page);
-  const pencil = cyl(.0045,.0045,.12,mat(0xf2c230,{ roughness:.5 }),6); pencil.position.set(0,-.21,.03); pencil.rotation.x = 1.1; f.R.el.add(pencil);
+  f.t.anchor('hips', f.t.props.book.p, book, f.t.props.book.q);
+  const pencil = cyl(.0045,.0045,.12,mat(0xf2c230,{ roughness:.5 }),6); pencil.position.set(0,.085,.025); pencil.rotation.x = .5; f.t.bones.handR.add(pencil);
   f.sketch = { x:64, y:84, a:0, n:0 };
-  room.add(f.root);
 }
 function drawSketch(){
   const f = figs.artist, s = f.sketch, g = f.pageT.ctx, w = 128, h = 168;
@@ -1125,25 +968,29 @@ function drawSketch(){
   g.stroke(); f.pageT.tex.needsUpdate = true;
 }
 // Dewan: standing over the pizza, shooting it with a flash camera
-const DEW = { x:.08, z:.12 };
+const DEW = { x:.08, z:.12 }, dewQ = new THREE.Quaternion(), dewV = new THREE.Vector3();
+// where Dewan goes to shoot, and what gets shot there (the board and Joseph are looked up when needed: they're built later)
+const DSPOTS = [
+  { p:new THREE.Vector3(DEW.x, 0, DEW.z), at:()=>pizza.position },
+  { p:new THREE.Vector3(1.0, 0, .9), at:()=>chessCtl.board.position },
+  { p:new THREE.Vector3(1.65, 0, -.45), at:()=>dewV.set(GARD.plant.x, .62, GARD.plant.z) },
+  { p:new THREE.Vector3(-.9, 0, -1.05), at:()=>figs.gamer.head.getWorldPosition(dewV) },
+];
+function turnTo(w, want, k){ let d = want - w.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); w.yaw += d*Math.min(1, k); return Math.abs(d); }
 {
-  const f = makeFigure(P('shooter').look); figs.shooter = f;
-  f.root.position.set(DEW.x, STAND, DEW.z);
-  f.root.rotation.y = Math.atan2(pizza.position.x - DEW.x, pizza.position.z - DEW.z);
-  f.base = { sh:-.7, el:-1.5 };
-  f.L.sh.rotation.set(f.base.sh,0,-.3); f.R.sh.rotation.set(f.base.sh,0,.3);
-  f.L.el.rotation.set(f.base.el,0,-.5); f.R.el.rotation.set(f.base.el,0,.5);
-  f.spine.rotation.x = .1; f.neck.rotation.x = .3;
-  const cam = new THREE.Group(); cam.position.set(0,.34,.31); cam.rotation.x = .55; f.spine.add(cam); f.cam = cam;
+  const f = crewFig('dewan', DEW.x, 0, DEW.z, Math.atan2(pizza.position.x - DEW.x, pizza.position.z - DEW.z), 'Idle'); figs.shooter = f; f.t.hand('L', 'grip'); f.t.hand('R', 'grip');
+  // the camera hangs off the chest at chest height; it pitches inside its holder (down at the pizza, or up at you), and both hands hold its sides
+  const camP = new THREE.Group(), cam = new THREE.Group(); camP.add(cam); f.cam = cam;
   const bodyM = mat(0x1a1a1c,{ roughness:.45 }), lensM = mat(0x0c0c0d,{ roughness:.25, metalness:.4 });
   cam.add(at(box(.13,.08,.05,bodyM,.012), 0,0,0), at(box(.04,.02,.03,bodyM,.006), -.035,.05,0));
   const lens = cyl(.026,.03,.05,lensM,18); lens.rotation.x = Math.PI/2; lens.position.set(.015,0,.045); cam.add(lens);
   const glass = cyl(.02,.02,.004,glow(0x223344),16); glass.rotation.x = Math.PI/2; glass.position.set(.015,0,.071); cam.add(glass);
   const flashM = new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0, toneMapped:false });
   f.flashBulb = at(new THREE.Mesh(new THREE.PlaneGeometry(.035,.016), flashM), -.035,.05,.0155); cam.add(f.flashBulb);
-  f.flash = new THREE.PointLight(0xfff6e8, 0, 2.6, 2); f.flash.position.set(0,0,.09); cam.add(f.flash);
+  f.t.anchor('chest', new THREE.Vector3(0, 1.18, .3), camP); f.camBase = camP.position.clone();
   f.nextShot = 2.5; f.shotAt = -9;
-  room.add(f.root);
+  f.walk = { i:0, state:'shoot', until:20, yaw:f.root.rotation.y }; f.spd = 0; f.lendK = 0; f.stride = 4*.785*Math.sin(.5)*f.scale; f.grip = true;
+  f.t.act.Walk.play(); f.t.act.Walk.setEffectiveWeight(0);
 }
 // Ebunrere: cross-legged on the floor at a chess board (the board, the set and Ebun's games live in room-mode-chess.js)
 const CHESS = { x:.55, z:1.35, yaw:.63 };
@@ -1157,7 +1004,7 @@ const CHESS = { x:.55, z:1.35, yaw:.63 };
 for (const p of PEOPLE){ if (p.says){ figs[p.id].bubble = makeBubble(p.says); room.add(figs[p.id].bubble); } }
 
 /* ---------- dust in the air ---------- */
-const DUST = reduce ? 0 : 160;
+const DUST = 0;   // (the specks read as flickering pixels on screen, so the air stays clear)
 const dustGeo = new THREE.BufferGeometry(), dustPos = new Float32Array(DUST*3), dustSeed = new Float32Array(DUST);
 for (let i=0;i<DUST;i++){ dustPos[i*3]=(rand()-.5)*5.4; dustPos[i*3+1]=.1+rand()*2.2; dustPos[i*3+2]=(rand()-.5)*4.8; dustSeed[i]=rand()*10; }
 dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos,3));
@@ -1195,11 +1042,13 @@ function drawMovie(t){
   g.fillStyle = '#000'; g.fillRect(0,0,w,18); g.fillRect(0,h-18,w,18);
   if (Math.sin(t*.9) > .1){ g.fillStyle='#fff'; g.font='500 10px "Geist",sans-serif'; g.textAlign='center'; g.fillText(['“We should start a company.”','“Tonight?”','“After this episode.”'][Math.floor(t/7)%3], w/2, h-24); }
   movie.tex.needsUpdate = true;
-  tmpC.setHSL(hue/360,.5,.55); movieLight.color.copy(tmpC);
 }
 let feedY = 0;
 function drawPhone(dt){
   const f = figs.scroller, g = f.phoneT.ctx, w = 72, h = 128;
+  if (f.meme && clockT < f.meme.until){ g.fillStyle = f.meme.bg; g.fillRect(0,0,w,h); g.fillStyle = '#0b0b0a'; g.font = '700 9px "Space Grotesk", sans-serif';
+    f.meme.lines.forEach((l, i) => g.fillText(l, 5, 22 + i*11)); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(5, 22 + f.meme.lines.length*11, w - 10, 40); g.fillStyle = '#0b0b0a'; g.fillRect(0,0,w,8);
+    f.phoneT.tex.needsUpdate = true; return; }
   feedY += dt * (Math.sin(clockT*1.3) > .2 ? 40 : 4);
   g.fillStyle = '#f4f2ee'; g.fillRect(0,0,w,h);
   for (let i=-1;i<5;i++){ const y = i*44 - (feedY % 44) + 8;
@@ -1232,11 +1081,12 @@ register({ kind:'item', label:'Joseph’s laptop · play R208 Run', action:()=>r
 register({ kind:'item', label:'Movie night', title:'Movie night', eyebrow:'Object · crate',
   body:'This laptop is mid-film. Clicking it could play the R208 showreel or a project video in a pop-up player.' }, [mLaptop, crate, beanbag]);
 register({ kind:'item', label:'Desk lamp', action:()=>{ lampOn = !lampOn; toast(lampOn ? 'Lamp on' : 'Lamp off'); } }, [lamp]);
-register({ kind:'item', label:'Day / night switch', action:()=>setDay(!isDay) }, [switchG, hitBox(.2,.26,.06,2.93,1.05,-D/2+.03)]);
+register({ kind:'item', label:'Day / night switch', action:()=>setDay(!isDay) }, [switchG, hitBox(.06,.26,.2,W/2-.03,1.05,DOOR.z0-.2)]);
 register({ kind:'item', label:'Tube light', action:()=>setTube(!tubeOn) }, [tube]);
 register({ kind:'item', label:'Ceiling fan', action:()=>{ fanSpeed = (fanSpeed + 1) % 4; toast(['Fan off. It’s getting warm.','Fan on low','Fan on medium','Fan on full. Papers everywhere.'][fanSpeed]); } }, [fan]);
 register({ kind:'item', label:'Bookshelf', action:()=>toast('Past questions, a borrowed textbook nobody returned, and one novel everyone has started.') }, [shelf]);
 register({ kind:'item', label:'Window', action:()=>toast(isDay ? 'The hostel across the way. Someone is drying clothes on the balcony.' : 'Half the block is still awake too.') }, WINS.map(w=>hitBox(w.w, WY1-WY0, .03, w.x, (WY0+WY1)/2, -D/2-.03)));
+register({ kind:'item', label:'Front window', action:()=>toast(isDay ? 'The compound: the water tank, the fence, and the long walk to lectures.' : 'The water tank light is the only thing awake out front.') }, [hitBox(FW.w, WY1-WY0, .03, -FW.x, (WY0+WY1)/2, D/2+.03)]);
 register({ kind:'item', label:'Mini fridge', title:'The snack stash', eyebrow:'Object · fridge',
   body:'A spot for easter eggs: inside jokes, the snacks people fought over, whatever the room remembers.',
   action:()=>{ fridgeOpen = !fridgeOpen; } }, [fridge]);
@@ -1244,9 +1094,7 @@ register({ kind:'item', label:'Room 208 poster', title:'Room 208 poster', eyebro
   body:'Posters could link to R208 services: web, AI, automation, design.',
   link:{ href:'https://r208-site.vercel.app/', text:'See R208 services ↗' } }, [posterRoom]);
 register({ kind:'item', label:'Cold pizza', action:()=>toast('Cold pizza. Still counts as dinner.') }, [pizza]);
-register({ kind:'item', label:'Door', title:'Leave the room', eyebrow:'Object · door',
-  body:'The door takes visitors back to the main R208 site.',
-  link:{ href:'https://r208-site.vercel.app/', text:'Back to r208 ↗' } }, [doorG]);
+register({ kind:'item', label:'Door · open or shut', action:()=>{ doorOpen = !doorOpen; toast(doorOpen ? 'The corridor. Someone in 209 is playing Asake again.' : 'Door shut.'); } }, [doorG]);
 register({ kind:'item', label:'Clock', action:()=>toast('It’s ' + new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) + '. Nobody here is sleeping soon.') }, [clock]);
 
 // roster chips
@@ -1254,7 +1102,8 @@ const rosterEl = $('roster');
 PEOPLE.forEach((p,i)=>{
   const li = document.createElement('li'), b = document.createElement('button');
   b.className = 'chip'; b.type = 'button'; b.id = 'chip-' + p.id;
-  b.innerHTML = `<span class="face" style="background:#${p.look.skin.toString(16).padStart(6,'0')};box-shadow:inset 0 5px 0 #${p.look.hair.toString(16).padStart(6,'0')}"></span>${p.name}`;
+  const sp = figs[p.id].spec;   // the chip's little face: skin and hair from the figure's own sheet
+  b.innerHTML = `<span class="face" style="background:${sp.skin};box-shadow:inset 0 5px 0 ${sp.hair.color}"></span>${p.name}`;
   b.addEventListener('click', ()=>activate(people[i]));
   li.appendChild(b); rosterEl.appendChild(li);
 });
@@ -1293,7 +1142,69 @@ renderer.domElement.addEventListener('pointerup', e=>{
   if (moved > 6 || !quick) return;
   const en = pick(e.clientX, e.clientY);
   if (en) activate(en);
+  else walkTo(e.clientX, e.clientY);
 });
+
+/* ---------- getting around: zone buttons, tap the floor to glide there, WASD / arrow keys. Drag to look and scroll to zoom still work. ---------- */
+const ZONES = {
+  // (each view is set so Michael's pacing line and Dewan in the middle of the room stay out of the way)
+  bunks:  [[-1.0,1.7,2.2], [-2.4,.9,-.6]],
+  desks:  [[1.6,1.85,.6],  [-.5,.7,-1.9]],
+  chess:  [[1.95,1.3,2.3], [.75,.3,1.6]],
+  door:   [[-.3,1.5,.1],   [2.9,1.0,-1.8]],
+  window: [[.9,1.35,.6],   [.2,1.3,2.6]],
+};
+function setZone(z){ document.querySelectorAll('.zone').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.zone === z))); }
+// (closes the card without flying home, since the view is about to go somewhere else)
+function dropCard(){ $('card').hidden = true; active = null; document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-current','false')); }
+function goZone(z){
+  if (modes.current) return;
+  dropCard();
+  if (z === 'overview') return goHome();
+  setZone(z); const [p, t] = ZONES[z]; strictLimits(true); flyTo(V(...p), V(...t), 1.2);
+}
+document.querySelectorAll('.zone').forEach(b=>b.addEventListener('click', ()=>goZone(b.dataset.zone)));
+
+// tap the floor: the view glides there, the same way round, and a ring marks the spot.
+// Only the floor counts (and low things on it): a tap on a bed or a wall does nothing.
+const ring = new THREE.Mesh(new THREE.RingGeometry(.11,.15,40), new THREE.MeshBasicMaterial({ color:LIME, transparent:true, opacity:0, depthWrite:false, toneMapped:false }));
+ring.rotation.x = -Math.PI/2; ring.renderOrder = 2; ring.visible = false; room.add(ring);
+let ringT = 1;
+function shown(o){ for (; o; o = o.parent) if (!o.visible) return false; return true; }
+function walkTo(cx, cy){
+  pointer.set(cx/innerWidth*2-1, -(cy/innerHeight)*2+1); raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObject(room, true).find(h => h.object.isMesh && h.object !== ring && shown(h.object));
+  if (!hit || hit.point.y > .15) return;                                         // (low things on the floor count: the rug, the pizza box)
+  const x = THREE.MathUtils.clamp(hit.point.x, -W/2+.45, W/2-.45), z = THREE.MathUtils.clamp(hit.point.z, -D/2+.45, D/2-.45);
+  if (Math.abs(x - hit.point.x) + Math.abs(z - hit.point.z) > .8) return;          // through the door, out in the corridor
+  const t1 = V(x, THREE.MathUtils.clamp(controls.target.y, .45, 1.1), z);
+  const off = camera.position.clone().sub(controls.target); if (off.length() > 2.4) off.setLength(2.4);
+  dropCard(); setZone(null); strictLimits(true);
+  flyTo(t1.clone().add(off), t1, .9);
+  ring.position.set(x, .014, z); ringT = 0;
+}
+
+// WASD or the arrow keys walk the view along the floor, the way the camera faces
+const MOVE_KEYS = { KeyW:[0,1], ArrowUp:[0,1], KeyS:[0,-1], ArrowDown:[0,-1], KeyA:[-1,0], ArrowLeft:[-1,0], KeyD:[1,0], ArrowRight:[1,0] };
+const WALKBOX = new THREE.Box3(V(-W/2+.5,.3,-D/2+.5), V(W/2-.5,1.9,D/2-.5));
+const held = new Set(), walkF = new THREE.Vector3(), walkR = new THREE.Vector3(), walkUp = new THREE.Vector3(0,1,0);
+addEventListener('keydown', e=>{
+  if (modes.current || e.metaKey || e.ctrlKey || e.altKey || !MOVE_KEYS[e.code] || e.target.closest?.('input,textarea,select')) return;
+  held.add(e.code); e.preventDefault(); $('hint').classList.add('gone');
+});
+addEventListener('keyup', e=>held.delete(e.code));
+addEventListener('blur', ()=>held.clear());
+function walkKeys(dt){
+  if (!held.size || modes.current) return;
+  let f = 0, r = 0; for (const c of held){ r += MOVE_KEYS[c][0]; f += MOVE_KEYS[c][1]; }
+  if (!f && !r) return;
+  if (tween){ tween = null; strictLimits(true); }
+  camera.getWorldDirection(walkF); walkF.y = 0; walkF.normalize(); walkR.crossVectors(walkF, walkUp);
+  walkF.multiplyScalar(f).addScaledVector(walkR, r).setLength(1.8*dt);
+  // the spot you look at stops at the walls, and the camera only moves as far as it did, so it never ends up past it
+  walkR.copy(controls.target); controls.target.add(walkF); WALKBOX.clampPoint(controls.target, controls.target);
+  camera.position.add(walkF.subVectors(controls.target, walkR)); setZone(null);
+}
 
 function activate(en){
   if (en.action) en.action();
@@ -1320,10 +1231,16 @@ function openPerson(p){
   const target = new THREE.Vector3(); p.fig.head.getWorldPosition(target); target.y += .12;
   // on tall screens the card covers the lower half, so pull back and frame the person higher
   const narrow = innerWidth/innerHeight < .8;
-  const off = new THREE.Vector3(...FOCUS[p.id]).multiplyScalar(narrow ? 1.7 : 1);
+  // the focus offsets were set for a 36 degree lens; scale them for the wider one so people fill the frame the same
+  let base = new THREE.Vector3(...FOCUS[p.id]);
+  // Dewan moves round the room, so the offset turns too: the quarter-turn of it that's most in front and still inside the walls
+  if (p.id === 'shooter'){ const fw = new THREE.Vector3(0, 0, 1).applyQuaternion(p.fig.root.quaternion); let best = -9;
+    for (let k = 0; k < 4; k++){ const o = new THREE.Vector3(...FOCUS.shooter).applyAxisAngle(walkUp, k*Math.PI/2), q = target.clone().add(o);
+      const sc = (Math.abs(q.x) < W/2 - .3 && Math.abs(q.z) < D/2 - .3 ? 0 : -5) + o.clone().setY(0).normalize().dot(fw); if (sc > best){ best = sc; base = o; } } }
+  const off = base.multiplyScalar((narrow ? 1.7 : 1)*Math.tan(THREE.MathUtils.degToRad(18))/Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
   if (narrow) target.y -= .35;
   const pos = target.clone().add(off);
-  pos.z = Math.max(pos.z, -D/2 + .2); pos.x = Math.max(pos.x, -W/2 + .2); // never end up behind a wall
+  pos.z = THREE.MathUtils.clamp(pos.z, -D/2 + .2, D/2 - .2); pos.x = THREE.MathUtils.clamp(pos.x, -W/2 + .2, W/2 - .2); // never end up behind a wall
   strictLimits(false); flyTo(pos, target);
 }
 function openCard(it){
@@ -1342,7 +1259,7 @@ function closeCard(){
   if (active?.kind === 'person') goHome();
   active = null;
 }
-function goHome(){ flyTo(homePos(), HOME_TARGET, 1.2, ()=>strictLimits(true)); }
+function goHome(){ setZone('overview'); flyTo(homePos(), HOME_TARGET, 1.2, ()=>strictLimits(true)); }
 $('cardClose').addEventListener('click', closeCard);
 addEventListener('keydown', e=>{
   if (modes.current){ if (e.target.closest?.('input,textarea,select')) return; if (modes.current.key?.(e)){ e.preventDefault(); return; } if (e.key === 'Escape') modes.stop(); return; }
@@ -1372,6 +1289,16 @@ let toastTimer;
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.hidden = true; void t.offsetWidth; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.hidden = true, 2400); }
 
 let tween = null;
+// the room's inside, less a margin; the camera never leaves it, so there is never a void behind the walls
+const ROOMBOX = new THREE.Box3(new THREE.Vector3(-W/2+.14, .18, -D/2+.14), new THREE.Vector3(W/2-.14, H-.16, D/2-.14));
+let camWant = 0; const camV = new THREE.Vector3();
+function keepInside(){
+  ROOMBOX.clampPoint(controls.target, controls.target);
+  camV.copy(camera.position).sub(controls.target); const want = camV.length(); if (want < 1e-4) return; camV.divideScalar(want);
+  let tmax = Infinity;
+  for (const ax of ['x','y','z']){ const d = camV[ax]; if (Math.abs(d) < 1e-6) continue; tmax = Math.min(tmax, ((d > 0 ? ROOMBOX.max[ax] : ROOMBOX.min[ax]) - controls.target[ax])/d); }
+  if (want > tmax){ camera.position.copy(controls.target).addScaledVector(camV, Math.max(.05, tmax)); camWant = Math.min(camWant, tmax*1.15 + .1); }
+}
 function flyTo(pos, target, dur=1.1, done){ tween = { p0:camera.position.clone(), t0:controls.target.clone(), p1:pos, t1:target, s:performance.now(), d:dur*1000/Math.max(SPEED,.6), done }; }
 
 /* ---------- play: games you can join (chess with Ebun, Michael's cube, Joshua's plant, Joseph's game, Wright's beats) ---------- */
@@ -1390,7 +1317,7 @@ const modes = {
   current: null,
   start(m){
     if (this.current === m) return; if (this.current) this.stop(true);
-    quietCard(); this.current = m; document.body.classList.add('playing'); tip.hidden = true; setHover(null);
+    quietCard(); this.current = m; document.body.classList.add('playing'); tip.hidden = true; setHover(null); banter.q.length = 0;
     if (m.lockCamera) controls.enabled = false; strictLimits(false); m.enter();
   },
   stop(keepView){
@@ -1418,7 +1345,7 @@ function makeSpeech(){
 }
 function say(id, text, secs = 3){ const f = figs[id]; if (!f.speech){ f.speech = makeSpeech(); room.add(f.speech.sprite); } f.speech.set(text); f.speechUntil = clockT + secs; }
 const ctx = { THREE, room, scene, camera, controls, renderer, mat, canvasTex, mergeGeometries, RoundedBoxGeometry, LITE, figs, rand, ui, say, el, toast, modes,
-  fly:(p, t, d, done)=>flyTo(p, t, d, done), now:()=>clockT, CHESS };
+  fly:(p, t, d, done)=>flyTo(p, t, d, done), now:()=>clockT, CHESS, bounds:ROOMBOX };
 const chessCtl = createChess(ctx);
 register({ kind:'item', label:'Chess board · play Ebun', action:()=>chessCtl.invite() }, [chessCtl.board]);
 // the card's play button, for the people who have a game
@@ -1429,8 +1356,64 @@ register({ kind:'item', label:'Joshua’s plant · water it', action:()=>plantCt
 const runCtl = createRun(ctx, { game, celebrate, GAMER, laptop:gLaptop });
 const beatCtl = createBeat(ctx, { BEAT });
 register({ kind:'item', label:'Wright’s laptop · make a beat', action:()=>beatCtl.start() }, [figs.producer.lap]);
-const PLAY = { chess:['Play chess with Ebun', ()=>chessCtl.invite()], pacer:['Try Michael’s cube', ()=>cubeCtl.start()], gardener:['Water Joshua’s plant', ()=>plantCtl.start()],
-  gamer:['Play Joseph’s game', ()=>runCtl.start()], producer:['Make a beat with Wright', ()=>beatCtl.start()] };
+const PLAY = { chess:['Play chess with Ebun', ()=>chessCtl.invite()], pacer:['Race Michael’s cube', ()=>cubeCtl.start('race')], gardener:['Water Joshua’s plant', ()=>plantCtl.start()],
+  gamer:['Play Joseph’s game', ()=>runCtl.start()], producer:['Make a beat with Wright', ()=>beatCtl.start()],
+  shooter:['Borrow Dewan’s camera', ()=>photoCtl.start()], artist:['Ask Will for a sketch', ()=>sketchCtl.start()],
+  scroller:['Send Gbolahan a meme', ()=>modes.start(memeMode)], sleeper:['Try to wake them up', ()=>poke()], founder:['Ask Terence what’s next', ()=>askTerence()] };
+const photoCtl = createPhoto(ctx), sketchCtl = createSketch(ctx, { pageT:figs.artist.pageT });
+
+// Gbolahan: pick a meme to send; it comes up on the phone, and a second later the laugh
+const MEMES = [
+  { t:'Me: I’ll start the assignment early. Also me, 11:58pm:', bg:'#d6ff4b', r:['Bro. BRO.', 'Why is this me', 'The 11:58 is too real'] },
+  { t:'When NEPA takes the light at 99% download', bg:'#ff9b7a', r:['Nooo, not the 99%', 'I felt that in my soul', 'Every single time'] },
+  { t:'Lecturer: “This won’t be on the exam.” The exam:', bg:'#9ec5ff', r:['Sending this to the class group', 'This is a lawsuit', 'Exactly what happened'] },
+  { t:'POV: Joseph says “one more round”', bg:'#c9a6ff', r:['Joseph is literally right there', 'Joseph, look at this', 'Four hours later…'] },
+];
+const memeMode = { id:'meme', lockCamera:true,
+  enter(){ const f = figs.scroller, body = ui.open({ eyebrow:'Phone · Gbolahan', title:'Send Gbolahan a meme' });
+    body.append(el('div', { className:'prow memes' }, MEMES.map(m => el('button', { className:'pbtn', type:'button', textContent:m.t, onclick:() => {
+      const words = m.t.split(' '), lines = ['']; for (const w of words){ if ((lines.at(-1) + ' ' + w).length > 12 && lines.at(-1)) lines.push(w); else lines[lines.length - 1] = (lines.at(-1) + ' ' + w).trim(); }
+      f.meme = { lines:lines.slice(0, 7), bg:m.bg, until:clockT + 6 }; nextLol = clockT + 1.1;
+      setTimeout(() => say('scroller', m.r[rand()*m.r.length|0], 2.6), 2300); ui.status(`Sent <b>${m.t.split(' ').slice(0, 4).join(' ')}…</b> Watch the reaction.`); } }))));
+    ui.status('Pick one. It goes straight to the phone.');
+    const p = f.head.getWorldPosition(new THREE.Vector3()); flyTo(p.clone().add(new THREE.Vector3(.75, .35, .55)), p.clone().add(new THREE.Vector3(0, -.12, 0)), 1); },
+  exit(){}, pointer:(type)=>type === 'tap', key:()=>false, resize(){} };
+// the Sleeper: the third poke gets a reaction
+const sleepPoke = { n:0, sit:-99 };
+function poke(){ const n = ++sleepPoke.n;
+  say('sleeper', n === 1 ? 'mmh…' : n === 2 ? 'five more minutes…' : n === 3 ? 'WHAT. Oh. It’s you.' : ['zzz…', 'I’m not even here.', 'Wake me when it ships.'][rand()*3|0], 2.4);
+  if (n === 3) sleepPoke.sit = clockT; if (n >= 6) sleepPoke.n = 0; }
+// Terence: a line about what's going on
+const TERENCE = ['We’re building R208 one room at a time. You’re standing in the first one.', 'Race Michael on the cube. Michael claims 45 seconds. I don’t believe it.',
+  'Ebun talks a lot of trash at chess. Make Ebun eat those words.', 'Every person and thing in here is code. No model files.', 'Borrow Dewan’s camera and take a photo for the wall.'];
+let terenceI = 0; function askTerence(){ say('founder', TERENCE[terenceI++ % TERENCE.length], 3.6); }
+
+// people talk to each other now and then: a short exchange, the two of them looking at each other while it lasts
+const BANTER = [
+  [['producer','Joseph, listen to this drop.'], ['gamer','Hard. Put it in the game.']],
+  [['chess','Michael, you’re next after this one.'], ['pacer','After I finish this cube.']],
+  [['gardener','Who keeps putting pizza near my plant?'], ['shooter','It’s for the photo, relax.']],
+  [['scroller','Will, look at this one.'], ['artist','I’m drawing. Show me later.']],
+  [['gamer','Wright, what’s my high score again?'], ['producer','42. You won’t let us forget.']],
+  [['founder','Standup in five minutes.'], ['sleeper','zzz…']],
+  [['shooter','Ebun, look up. Smile.'], ['chess','I’m thinking. Later.']],
+  [['pacer','Joshua, does the plant have a name?'], ['gardener','Kelechi. Be respectful.']],
+  [['artist','Dewan, can I draw from your pizza photo?'], ['shooter','Only if you credit me.']],
+  [['scroller','Who finished the last of the chin chin?'], ['founder','Not me.'], ['gamer','…not me either.']],
+];
+const banter = { next:14, q:[] }, lookV = new THREE.Vector3();
+function talk(lines, looks){ const t = clockT, until = t + lines.length*2.8 + .4; lines.forEach(([id, text], i) => banter.q.push({ id, text, at:t + .3 + i*2.8 }));
+  for (const [a, b] of looks) figs[a].banter = { to:figs[b], until }; }
+function banterTick(t){
+  if (banter.q.length){ if (t >= banter.q[0].at){ const b = banter.q.shift(); say(b.id, b.text, 2.6); } return; }
+  if (t < banter.next) return; banter.next = t + 16 + rand()*18;
+  if (modes.current || active) return;
+  const ex = BANTER[rand()*BANTER.length|0], ids = ex.map(l => l[0]), first = ids[0], other = ids.find(i => i !== first);
+  talk(ex, ids.filter(i => i !== 'sleeper').map(i => [i, i === first ? other : first]));
+}
+// a look that gives way to a conversation: unless someone has you clicked, or a game is on, you look at who you're talking with
+function lookAt(f, target, on, dt){ const b = f.banter;
+  if (b && clockT < b.until && active?.fig !== f && !modes.current){ b.to.head.getWorldPosition(lookV); f.t.look(lookV, true, dt); } else f.t.look(target, on, dt); }
 $('cPlay').addEventListener('click', ()=>{ const p = active && PLAY[active.id]; if (p) p[1](); });
 
 /* ---------- animation ---------- */
@@ -1440,17 +1423,19 @@ const v3 = new THREE.Vector3();
 const clk = new THREE.Clock();
 let screenAcc = 0;
 
-// watch the frame time; if the device struggles, render fewer pixels, then drop the shadow
-const perf = { n:0, sum:0, skip:90 };
+// watch the frame time once, early: if the device struggles, render fewer pixels (and on a very slow one, drop the shadow).
+// It decides one time and then leaves the picture alone; stepping it down again and again made the room shimmer and jump.
+const perf = { n:0, sum:0, skip:90, done:false };
 function quality(raw){
+  if (perf.done) return;
   if (perf.skip > 0){ perf.skip--; return; }            // first frames include shader compiles
   if (raw > .25 || document.hidden) return;             // tab switches, not real frames
   perf.sum += raw; perf.n++;
-  if (perf.n < 60) return;
-  const avg = perf.sum/perf.n; perf.sum = 0; perf.n = 0;
+  if (perf.n < 90) return;
+  const avg = perf.sum/perf.n; perf.done = true;
   if (avg < 1/40) return;                                // 40fps or better: leave it
-  if (pixelRatio > 1){ pixelRatio = Math.max(1, pixelRatio - .25); renderer.setPixelRatio(pixelRatio); renderer.setSize(innerWidth, innerHeight); perf.skip = 30; }
-  else if (moon.castShadow){ moon.castShadow = false; perf.skip = 90; }
+  if (pixelRatio > 1){ pixelRatio = 1; renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight); }
+  if (avg > 1/24) moon.castShadow = false;
 }
 function animate(){
   const raw = clk.getDelta();
@@ -1459,28 +1444,28 @@ function animate(){
   runCtl.update(Math.min(raw, .05));   // the game runs at real speed, even with reduced motion
   beatCtl.update();
   clockT += dt; const t = clockT;
+  banterTick(t);
 
-  // gamer
+  // Joseph: games; arms up for a GG when someone takes Joseph's record
   // (while you play the game, Joseph sits back with the pad still and watches)
-  { const f = figs.gamer, c = t - celebrateAt, k = c < 1.6 ? Math.sin(Math.min(c/1.6,1)*Math.PI) : 0;
-    f.watch = (f.watch || 0) + ((runCtl.busy ? 1 : 0) - (f.watch || 0))*Math.min(1, dt*3); const pw = 1 - f.watch;
-    const jit = (.05*Math.sin(t*17) + .03*Math.sin(t*23.3))*pw;
-    f.L.sh.rotation.x = f.base.sh + jit - k*2.0 + .25*f.watch; f.R.sh.rotation.x = f.base.sh - jit*.8 - k*2.0 + .25*f.watch;
-    f.L.el.rotation.x = f.base.el + .06*Math.sin(t*19)*pw + k*1.2; f.R.el.rotation.x = f.base.el + .06*Math.sin(t*21+1)*pw + k*1.2;
-    f.L.sh.rotation.z = -.45 + k*.1; f.R.sh.rotation.z = .45 - k*.1;
+  { const f = figs.gamer, c = t - celebrateAt, k = c < 1.6 ? Math.sin(Math.min(c/1.6,1)*Math.PI) : 0, on = active?.id === 'gamer', q = f.root.quaternion;
+    f.watch = (f.watch || 0) + ((runCtl.busy ? 1 : 0) - (f.watch || 0))*Math.min(1, dt*3);
+    f.t.act.Game.timeScale = 1 - .85*f.watch;
+    f.t.mixer.update(dt); f.t.tick(dt);
+    if (f.watch > .01) f.t.bones.spine.rotateX(-.1*f.watch);
+    if (k > .01){ f.head.getWorldPosition(v3);
+      for (const [s,S] of [[1,'L'],[-1,'R']]) f.t.reach(S, v3.clone().add(dirOf(q, s*.2, .3, .04)), k, dirOf(q, s, -.2, -.3), dirOf(q, s*.1, 1, 0), dirOf(q, 0, 0, 1)); }
     f.pad.visible = k < .35;
-    f.spine.rotation.x = .14 - .12*f.watch + .03*Math.sin(t*1.7) - k*.25; f.head.rotation.y = .06*Math.sin(t*.9);
-    f.head.rotation.z = .04*Math.sin(t*2.3); f.head.rotation.x = 0;
-    f.torso.scale.z = 1 + .025*Math.sin(t*1.6);
-    f.setClosed(((t + f.blinkOff) % f.blinkEvery) < .12 || k > .3);
-    f.mouth.visible = k <= .3; f.mouthOpen.visible = k > .3;
+    lookAt(f, camera.position, on, dt);
     showTag(f.gg, f, f.lookW < .2 ? k : 0);
   }
-  // sleeper
-  { const f = figs.sleeper, b = Math.sin(t*1.25);
-    f.torso.scale.set(1, 1, 1 + .06*b); f.torso.position.z = .006*b; f.neck.rotation.x = .3 + .015*b;
+  // the Sleeper: breathes slowly; the z's drift up off the pillow
+  { const f = figs.sleeper, sc = t - sleepPoke.sit, sk = sc < 3.4 ? Math.sin(Math.min(1, sc/3.4)*Math.PI) : 0;
+    f.t.mixer.update(dt); f.t.tick(dt);
+    if (sk > .001){ f.t.bones.spine.rotateX(.75*sk); f.t.bones.chest.rotateX(.25*sk); f.t.bones.neck.rotateX(.2*sk); }
+    f.t.eyes(sk > .15 ? 0 : 1);
     f.head.getWorldPosition(v3);
-    f.zzz.forEach((s,i)=>{ const p = ((t*.35 + i/3) % 1);
+    f.zzz.forEach((s,i)=>{ s.visible = sk < .05; const p = ((t*.35 + i/3) % 1);
       s.position.set(v3.x + .1 + p*.25, v3.y + .25 + p*.55, v3.z + .1*Math.sin(p*6+i));
       s.material.opacity = p < .2 ? p/.2 : 1 - (p-.2)/.8; const sc = .08 + p*.12; s.scale.set(sc*2,sc,1); });
   }
@@ -1491,29 +1476,41 @@ function animate(){
     const lk = t - lolAt < 1.4 ? Math.sin((t-lolAt)/1.4*Math.PI) : 0;
     f.t.mixer.update(dt); f.t.tick(dt);
     if (lk > 0){ b.chest.rotateZ(lk*.035*Math.sin(t*26)); b.chest.rotateX(-.06*lk); b.neck.rotateX(-.2*lk); }
-    f.t.look(camera.position, on, dt);
-    f.phoneLight.intensity = .3 + .06*Math.sin(t*3);
+    lookAt(f, camera.position, on, dt);
+    f.phoneLight.intensity = .3;
     showTag(f.lol, f, lk);
+    if (t - lolAt < .05 && f.meme && clockT < f.meme.until) f.meme.until = Math.min(f.meme.until, t + 3);
   }
   // Michael: walks the line and turns at each end, working the cube the whole way; slows to a stop and looks up when clicked
   { const f = figs.pacer, w = f.walk, held = cubeCtl.busy, on = active?.id === 'pacer' || held, A = f.t.act, b = f.t.bones, SPD = .42;
-    const tgt = w.to === 'b' ? PACE.b : PACE.a; v3.set(tgt.x - f.root.position.x, 0, tgt.z - f.root.position.z);
+    const tgt = PACE[w.to]; v3.set(tgt.x - f.root.position.x, 0, tgt.z - f.root.position.z);
     const dist = v3.length();
-    f.spd += ((on ? 0 : SPD*(w.state === 'walk' ? Math.min(1, .35 + dist/.4) : .6)) - f.spd)*Math.min(1, dt*(on ? 6 : 3));
+    f.spd += ((on || w.state === 'watch' ? 0 : SPD*(w.state === 'walk' ? Math.min(1, .35 + dist/.4) : .6)) - f.spd)*Math.min(1, dt*(on ? 6 : 3));
     if (w.state === 'walk'){
-      if (dist < .02){ w.state = 'turn'; w.turnT = 0; w.yaw0 = w.yaw; w.to = w.to === 'b' ? 'a' : 'b'; }
+      if (dist < .02){
+        if (w.to === 'w'){ w.state = 'watch'; w.stay = t + 9 + rand()*5; w.said = 0; }
+        else { w.state = 'turn'; w.turnT = 0; w.yaw0 = w.yaw; w.to = w.to === 'b' ? (!w.watched && !held && rand() < .35 ? 'w' : 'a') : 'b'; w.watched = false; }
+      }
       else { v3.multiplyScalar(Math.min(f.spd*dt, dist)/dist); f.root.position.x += v3.x; f.root.position.z += v3.z; }
+    } else if (w.state === 'watch'){
+      // stands by the board, still working the cube, says something about the game, then heads back
+      const bp = chessCtl.board.position; let dy = Math.atan2(bp.x - f.root.position.x, bp.z - f.root.position.z) - w.yaw; w.yaw += Math.atan2(Math.sin(dy), Math.cos(dy))*Math.min(1, dt*3);
+      if (!w.said && t > w.stay - 7 && !on && !modes.current){ w.said = 1;
+        talk([['pacer', ['Ebun, take the knight.', 'I’d castle there.', 'That bishop is hanging, bro.', 'Who’s winning?', 'Hmm. Bold move.'][rand()*5|0]],
+          ...(rand() < .65 ? [['chess', ['Watch and learn.', 'I see it. Patience.', 'Both of me are winning.', 'Shh.'][rand()*4|0]]] : [])], [['chess', 'pacer']]); }
+      if (t > w.stay && !on){ w.state = 'turn'; w.turnT = 0; w.yaw0 = w.yaw; w.to = 'b'; w.watched = true; }
     } else {
       w.turnT += dt*f.spd/SPD/1.3;
-      const nt = w.to === 'b' ? PACE.b : PACE.a, d = nt.clone().sub(f.root.position), want = Math.atan2(d.x, d.z);
+      const nt = PACE[w.to], d = nt.clone().sub(f.root.position), want = Math.atan2(d.x, d.z);
       let dy = want - w.yaw0; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       const k = Math.min(1, w.turnT), e = k*k*(3-2*k); w.yaw = w.yaw0 + dy*e;
       if (k >= 1) w.state = 'walk';
     }
     // the gait follows the speed, and the stride sets the clip's pace so the feet don't skate
     f.gait += (Math.min(1, f.spd/SPD) - f.gait)*Math.min(1, dt*4);
-    // while you have the cube, Michael's hands come off it and drop to the sides
-    spring(f, 'hand', cubeCtl.holding ? 1 : 0, 5, dt); const hk = THREE.MathUtils.clamp(f.hand, 0, 1);
+    // while you have the cube, Michael's hands come off it and drop to the sides (unless you're racing: then they're on the second cube)
+    const rc = cubeCtl.racing;
+    spring(f, 'hand', cubeCtl.holding && !rc ? 1 : 0, 5, dt); const hk = THREE.MathUtils.clamp(f.hand, 0, 1);
     A.CubeWalk.setEffectiveWeight(f.gait*(1 - hk)); A.CubeIdle.setEffectiveWeight((1 - f.gait)*(1 - hk)); A.Idle.setEffectiveWeight(hk);
     if ((hk > .5) !== f.handsOff){ f.handsOff = hk > .5; f.t.hand('L', f.handsOff ? 'relax' : 'grip'); f.t.hand('R', f.handsOff ? 'relax' : 'grip'); }
     A.CubeWalk.timeScale = Math.max(.25, f.spd/f.stride);
@@ -1522,32 +1519,28 @@ function animate(){
     v3.copy(camera.position).sub(f.root.position); let dc = Math.atan2(v3.x, v3.z) - w.yaw; dc = Math.atan2(Math.sin(dc), Math.cos(dc));
     f.root.rotation.y = w.yaw + dc*THREE.MathUtils.clamp(f.face, 0, 1)*.7;
     f.t.mixer.update(dt); f.t.tick(dt);
-    const cb = f.cube, sc = t - cb.solved, lift = sc < 2.2 ? Math.sin(Math.min(sc/2.2,1)*Math.PI) : 0;
-    if (!on && sc > .6) cubeTurn(cb, dt);
+    const cb = f.cube, mc = rc ? f.cube2 : cb, sc = t - mc.solved, lift = sc < 2.2 ? Math.sin(Math.min(sc/2.2,1)*Math.PI) : 0;
+    if (!on && t - cb.solved > .6) cubeTurn(cb, dt);
     cubeCtl.update(dt);
-    const tw = cb.move && !held ? Math.sin(cb.move.t*Math.PI) : 0;
+    const tw = mc.move && (!held || rc) ? Math.sin(mc.move.t*Math.PI) : 0;
     if (tw){ b.handR.rotateX(-.16*tw); b.handL.rotateX(.08*tw); }
     if (lift){ b.chest.rotateX(-.08*lift); b.neck.rotateX(-.3*lift); }
-    f.t.look(cubeCtl.holding ? cubeCtl.P : camera.position, on, dt);
+    lookAt(f, rc ? f.cube2.g.getWorldPosition(cubeV) : cubeCtl.holding ? cubeCtl.P : !on && w.state === 'watch' ? chessCtl.board.position : camera.position, on || w.state === 'watch', dt);
     showTag(f.solvedTag, f, f.lookW < .2 ? lift : 0);
   }
   // Wright: the clip nods on the beat and taps a foot; its clock follows the screen's, so the nod lands on the kick
   { const f = figs.producer, a = f.t.act.Laptop;
     a.time = beatCtl.clip(dt, a.getClip().duration); f.t.mixer.update(0); f.t.tick(dt);
-    f.t.look(camera.position, active?.id === 'producer' || clockT < beatCtl.lookUntil, dt);
+    lookAt(f, camera.position, active?.id === 'producer' || clockT < beatCtl.lookUntil, dt);
   }
   // Joshua: tips the can every few seconds; drops fall into the pot, the new leaf perks up
-  // (while you have the can, the plant mode runs Joshua's arm, head and the water instead)
-  { const f = figs.gardener, cyc = (t % 7)/7, go = 1 - f.lookW, mine = plantCtl.busy;
-    f.torso.scale.z = 1 + .02*Math.sin(t*1.5);
-    f.setClosed(((t + f.blinkOff) % f.blinkEvery) < .12);
+  // (while you have the can, the plant mode sets canFree: the arm comes down and the head follows the can)
+  { const f = figs.gardener, cyc = (t % 7)/7, go = 1 - f.lookW, mine = plantCtl.busy, on = active?.id === 'gardener', q = f.root.quaternion, hold = 1 - (f.canFree || 0);
+    f.t.mixer.update(dt); f.t.tick(dt);
     plantG.leaves.rotation.z = .025*Math.sin(t*1.3);
     if (!mine){
       const pour = (cyc < .55 ? Math.min(1, Math.sin(cyc/.55*Math.PI)*1.6) : 0)*go;
       f.can.rotation.x = .05 + pour*.7;
-      f.R.sh.rotation.x = f.base.sh + pour*.1 - (1-go)*.15;
-      f.neck.rotation.x = .42*go;
-      f.head.rotation.set(0, .05*Math.sin(t*.6), 0);
       f.rose.getWorldPosition(v3);
       const sx = GARD.plant.x, sz = GARD.plant.z, sy = .66;
       f.drops.forEach((d,i)=>{ const q = ((t*1.7 + i/f.drops.length) % 1); d.visible = pour > .7;
@@ -1555,32 +1548,50 @@ function animate(){
       const grow = .85 + .3*Math.max(0, Math.sin(Math.max(0, cyc - .3)/.7*Math.PI));
       plantG.sprout.scale.set(.6*grow, .2*grow, grow);
     } else f.drops.forEach(d => d.visible = false);
+    // the right hand on the can's handle
+    if (hold > .01){ f.can.updateWorldMatrix(true, false); f.can.localToWorld(v3.set(0, .1, -.02)); f.t.reach('R', v3, Math.min(1, hold), dirOf(q, -1, -.3, -.6), dirOf(q, .5, -.15, .85), dirOf(q, 0, -1, 0)); }
+    // eyes on the pot while watering, on the can while you have it, on you when you click
+    if (on) v3.copy(camera.position); else if (f.canFree > .5) f.rose.getWorldPosition(v3); else v3.set(GARD.plant.x, .7, GARD.plant.z);
+    lookAt(f, v3, true, dt);
     plantCtl.update(dt, t);
   }
   // Will: sketching; looks up at the room now and then
-  { const f = figs.artist, go = 1 - f.lookW, cyc = t % 9, up = cyc > 7.4 ? Math.sin((cyc-7.4)/1.6*Math.PI) : 0, draw = go*(1 - up);
-    f.R.el.rotation.x = f.base.el + (.07*Math.sin(t*8.5) + .03*Math.sin(t*13.1))*draw;
-    f.R.sh.rotation.z = f.base.rz + .05*Math.sin(t*4.1)*draw;
-    f.neck.rotation.x = f.base.neck*(1 - Math.max(up*.75, f.lookW));
-    f.head.rotation.set(0, .04*Math.sin(t*.5), .03*Math.sin(t*.8));
-    f.torso.scale.z = 1 + .02*Math.sin(t*1.4);
-    f.setClosed(((t + f.blinkOff) % f.blinkEvery) < .12);
-    f.pupils.position.set(0, up > .2 ? .004 : -.006, 0);
-    if (draw > .5) drawSketch();
+  { const f = figs.artist, on = active?.id === 'artist', cyc = t % 9, up = cyc > 7.4 ? Math.sin((cyc-7.4)/1.6*Math.PI) : 0, draw = (1 - f.lookW)*(1 - up), sub = sketchCtl.subject;
+    f.t.act.Sketch.timeScale = draw > .3 || sketchCtl.drawing ? 1 : .15;
+    f.t.mixer.update(dt); f.t.tick(dt);
+    sketchCtl.update(dt);
+    if (sub){ sub.head.getWorldPosition(v3); f.t.look(v3, (t % 2.4) < .9, dt); }                 // a glance at the model, then back to the page
+    else if (on) f.t.look(camera.position, true, dt); else { figs.pacer.head.getWorldPosition(v3); lookAt(f, v3, up > .2, dt); }
+    if (draw > .5 && !sketchCtl.busy) drawSketch();
   }
-  // Dewan: lines up the shot, then the flash fires; when clicked he turns the camera on you
-  { const f = figs.shooter, go = 1 - f.lookW;
-    if (t > f.nextShot){ f.shotAt = t; f.nextShot = t + 3.5 + rand()*3; }
+  // Dewan: walks between spots round the room and shoots what's there (the pizza, the chess, the plant, Joseph at the desk).
+  // Lines up the shot, then the flash fires; when clicked the camera turns on you; when you borrow it, the hands are free
+  { const f = figs.shooter, on = active?.id === 'shooter', lend = photoCtl.busy, w = f.walk, A = f.t.act, sub = DSPOTS[w.i].at();
+    if (w.state === 'shoot' && t > w.until && !on && !lend && !modes.current){ let j; do j = rand()*DSPOTS.length|0; while (j === w.i); w.i = j; w.state = 'walk'; }
+    let want = 0;
+    if (w.state === 'walk' && !on && !lend){ const P = DSPOTS[w.i].p; v3.set(P.x - f.root.position.x, 0, P.z - f.root.position.z); const d = v3.length();
+      if (d < .03) w.state = 'aim';
+      else { want = .42*Math.min(1, .3 + d/.4); turnTo(w, Math.atan2(v3.x, v3.z), dt*5); v3.multiplyScalar(Math.min(f.spd*dt, d)/d); f.root.position.add(v3); } }
+    if (w.state === 'aim' && turnTo(w, Math.atan2(sub.x - f.root.position.x, sub.z - f.root.position.z), dt*3) < .03){ w.state = 'shoot'; w.until = t + 16 + rand()*14; f.nextShot = t + 1.5; }
+    f.root.rotation.y = w.yaw;
+    f.spd += (want - f.spd)*Math.min(1, dt*4); const g = THREE.MathUtils.clamp(f.spd/.42, 0, 1);
+    A.Walk.setEffectiveWeight(g); A.Idle.setEffectiveWeight(1 - g); A.Walk.timeScale = Math.max(.3, f.spd/f.stride);
+    spring(f, 'lendK', lend ? 1 : 0, 6, dt); const hold = THREE.MathUtils.clamp(1 - Math.max(f.lendK, g*1.5), 0, 1);
+    if ((hold > .5) !== f.grip){ f.grip = hold > .5; f.t.hand('L', f.grip ? 'grip' : 'relax'); f.t.hand('R', f.grip ? 'grip' : 'relax'); }
+    if (w.state === 'shoot' && t > f.nextShot && !lend){ f.shotAt = t; f.nextShot = t + 3.5 + rand()*3; }
     const since = t - f.shotAt, fl = since < .12 ? 1 - since/.12 : 0, dip = since < .5 ? Math.sin(since/.5*Math.PI) : 0;
-    f.flash.intensity = fl*5; f.flashBulb.material.opacity = fl;
-    f.spine.rotation.x = .1 + .04*Math.sin(t*.7)*go;
-    f.cam.rotation.x = .55*go - .1*(1 - go) - .05*dip;
-    f.L.sh.rotation.x = f.R.sh.rotation.x = f.base.sh - .25*(1 - go);
-    f.root.position.y = STAND - .008*dip;
-    f.neck.rotation.x = (.3 + .08*Math.sin(t*.4))*go;
-    f.head.rotation.set(0, .05*Math.sin(t*.5)*go, 0);
-    f.torso.scale.z = 1 + .02*Math.sin(t*1.4);
-    f.setClosed(((t + f.blinkOff) % f.blinkEvery) < .12 || fl > .4);
+    f.flashBulb.material.opacity = fl;   // (just the bulb: a real flash lit the whole room every few seconds)
+    f.t.mixer.update(dt); f.t.tick(dt);
+    const shootK = (1 - f.lookW)*(1 - g); f.t.bones.spine.rotateX(.06*shootK + .03*dip);
+    // the lens points at the subject, at you when you click, and hangs down on its strap while Dewan walks
+    const camP = f.cam.parent; camP.visible = f.lendK < .5; camP.position.copy(f.camBase); camP.position.y -= .16*g;
+    camP.getWorldPosition(v3); const pitch = THREE.MathUtils.clamp(Math.atan2(v3.y - sub.y, Math.hypot(sub.x - v3.x, sub.z - v3.z)), -.2, 1.0);
+    f.cam.rotation.x = THREE.MathUtils.lerp(THREE.MathUtils.lerp(pitch, 1.3, g), -.15, f.lookW) - .05*dip;
+    if (hold > .01){ f.cam.updateWorldMatrix(true, false); f.cam.getWorldQuaternion(dewQ);
+      const rt = dirOf(dewQ, 1, 0, 0), fw = dirOf(dewQ, 0, 0, 1), up = dirOf(dewQ, 0, 1, 0);
+      for (const [s,S] of [[1,'L'],[-1,'R']]){ f.cam.localToWorld(v3.set(s*.075, -.012, -.004));
+        f.t.reach(S, v3, hold, rt.clone().multiplyScalar(s).addScaledVector(up, -1.2), fw.clone().addScaledVector(rt, -s*.3), rt.clone().multiplyScalar(-s)); } }
+    lookAt(f, on || lend ? camera.position : sub, on || lend || w.state !== 'walk', dt);
   }
   // Ebunrere: thinks (strokes the beard), then leans in and moves a piece with the right hand; the board module decides which and when
   { const f = figs.chess, on = active?.id === 'chess', A = chessCtl.anim, b = f.t.bones, a = f.t.act.Chess, q = f.root.quaternion, d = (x,y,z) => new THREE.Vector3(x,y,z).applyQuaternion(q);
@@ -1598,7 +1609,7 @@ function animate(){
     // looking up at you (the card is open, or Ebun is talking to you): the left hand settles on its knee while the head comes up
     const lw = f.t.look.amount();
     if (lw > .002){ b.shinL.getWorldPosition(v3); v3.y += .085*f.scale; f.t.reach('L', v3, lw, d(1, -.3, -.4), d(-.2, -.55, 1), d(0, -1, 0)); }
-    f.t.look(camera.position, on || A.lookUntil > t, dt);
+    lookAt(f, camera.position, on || A.lookUntil > t, dt);
   }
   // Terence: idles; waves once when clicked, after the camera has flown in, and turns to look at you
   if (figs.founder){ const f = figs.founder, A = f.t.act, on = active?.id === 'founder';
@@ -1606,28 +1617,25 @@ function animate(){
     if (on && !f.waved && f.onFor > .8){ const w = A.Wave; w.reset().setLoop(THREE.LoopOnce, 1); w.clampWhenFinished = true; w.play(); A.Idle.crossFadeTo(w, .25, false); f.waved = true; }
     if (!on) f.waved = false;
     f.t.mixer.update(dt); f.t.tick(dt);
-    f.t.look(camera.position, on, dt);
+    lookAt(f, camera.position, on, dt);
   }
   // the person you clicked turns to look at you and says their line
   for (const p of people){
     const f = p.fig;
     f.lookW += ((active === p ? 1 : 0) - f.lookW) * Math.min(1, dt*3);
-    if (p.id !== 'sleeper' && !f.glb && f.lookW > .001){
-      v3.copy(camera.position); f.neck.worldToLocal(v3); v3.y -= .17;
-      const yaw = THREE.MathUtils.clamp(Math.atan2(v3.x, v3.z), -.8, .8);
-      const pitch = THREE.MathUtils.clamp(-Math.atan2(v3.y, Math.hypot(v3.x, v3.z)), -.5, .35);
-      f.head.rotation.y = THREE.MathUtils.lerp(f.head.rotation.y, yaw, f.lookW);
-      f.head.rotation.x = THREE.MathUtils.lerp(f.head.rotation.x, pitch, f.lookW);
-      f.pupils.position.set(THREE.MathUtils.lerp(f.pupils.position.x, Math.sign(yaw)*.006, f.lookW), f.pupils.position.y, 0);
-    }
-    f.sync && f.sync();
     if (f.speech){ const sp = f.speech.sprite; sp.visible = clockT < (f.speechUntil || 0);
-      if (sp.visible){ f.head.getWorldPosition(v3); const k = THREE.MathUtils.clamp(camera.position.distanceTo(v3)*.3, .2, .7); sp.scale.set(k, k/3.49, 1); sp.position.set(v3.x, v3.y + .12 + k*.42, v3.z); } }
+      if (sp.visible){ f.head.getWorldPosition(v3); let k = bubbleK(v3); sp.position.set(v3.x, v3.y + .12 + k*.42, v3.z);
+        // up close the spot above the head can be off the top of the screen: bring the bubble down into view (it draws over the head),
+        // sized again for where it ends up, which can be much nearer the camera (looking down at the chess board, say)
+        v3.copy(sp.position).project(camera); if (v3.y > .76 && v3.z < 1){ v3.y = .76; sp.position.copy(v3.unproject(camera)); k = bubbleK(sp.position, .02); }
+        sp.scale.set(k, k/3.49, 1); } }
     if (f.bubble){
       f.bubble.visible = f.lookW > .05 && !f.speech?.sprite.visible;
       if (f.bubble.visible){ f.head.getWorldPosition(v3); f.bubble.position.set(v3.x, v3.y + .5, v3.z); f.bubble.material.opacity = Math.min(1, f.lookW*1.4); }
     }
   }
+  // the room door
+  doorA += ((doorOpen ? 1.45 : 0) - doorA)*Math.min(1, dt*3); hinge.rotation.y = -doorA; corridor.visible = doorA > .02;
   // fridge door
   fridgeAngle += ((fridgeOpen ? 1.75 : 0) - fridgeAngle) * Math.min(1, dt*6);
   fDoor.rotation.y = fridgeAngle; fridgeLight.intensity = fridgeAngle / 1.75 * 1.6;
@@ -1635,7 +1643,7 @@ function animate(){
   lampLight.intensity += ((lampOn ? 2.6 : 0) - lampLight.intensity) * Math.min(1, dt*10);
   bulb.visible = lampOn; shade.material.emissiveIntensity = lampOn ? .5 : 0;
   // string lights
-  for (const b of bulbs){ const f = (isDay ? .45 : .82) + .18*Math.sin(t*2 + b.ph) * Math.sin(t*.7 + b.ph*2); b.m.color.copy(b.base).multiplyScalar(f); }
+  const bulbK = isDay ? .5 : .88; if (bulbs.k !== bulbK){ bulbs.k = bulbK; for (const b of bulbs) b.m.color.copy(b.base).multiplyScalar(bulbK); }
   // ceiling fan spins up and down smoothly; the curtains stir with it
   fanSpin += (fanSpeed*5.2 - fanSpin) * Math.min(1, dt*.9); fanAngle += fanSpin*dt; rotor.rotation.y = fanAngle;
   curtains.forEach((c,i)=>{ c.rotation.x = -((.01 + fanSpin*.006) * (.5 + .5*Math.sin(t*(1.3 + i*.17) + i*2)) + fanSpin*.005); });
@@ -1649,22 +1657,28 @@ function animate(){
   // screens at ~30fps
   screenAcc += dt;
   if (screenAcc > 1/30){ if (!runCtl.busy) drawGame(screenAcc); drawMovie(t); drawPhone(screenAcc); drawBeat(t); screenAcc = 0; }
-  gameLight.intensity = .45 + .1*Math.sin(t*9)*Math.sin(t*3.1);
+  gameLight.intensity = .45;
 
   // camera
+  walkKeys(Math.min(raw, .05));
+  if (ringT < 1){ ringT = Math.min(1, ringT + raw*1.5); ring.visible = ringT < 1; ring.material.opacity = (1 - ringT)*.85; ring.scale.setScalar(.6 + ringT*.9); }
   if (tween){
     let k = Math.min(1, (performance.now()-tween.s)/tween.d);
     const e = k < .5 ? 4*k*k*k : 1 - Math.pow(-2*k+2,3)/2;
     camera.position.lerpVectors(tween.p0, tween.p1, e); controls.target.lerpVectors(tween.t0, tween.t1, e);
     if (k === 1){ const d = tween.done; tween = null; d && d(); }
+    camWant = 0;
   }
+  else if (camWant){ camV.copy(camera.position).sub(controls.target).normalize(); camera.position.copy(controls.target).addScaledVector(camV, camWant); }   // the distance you chose, before the walls cut it short
   controls.update();
+  camWant = camera.position.distanceTo(controls.target);
+  keepInside();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
 
 addEventListener('resize', ()=>{
-  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  camera.aspect = innerWidth/innerHeight; camera.fov = viewFov(); camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   modes.current?.resize?.();
 });

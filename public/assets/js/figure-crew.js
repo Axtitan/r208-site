@@ -166,6 +166,27 @@ export const CREW = {
     glasses:{ shape:'rect', frame:'ink', a:.032, b:.022, c:.009, w:.0032, lens:'smoke' },
     top:{ kind:'hoodie', cloth:'#e6dcc8', strings:'#8d4b2b' },
     legs:{ kind:'jogger', color:'#3a3638' }, shoes:{ kind:'sneaker', upper:'#f4f1ea', sole:'#e8e4dc', lace:'#cfcac2' } },
+  // the rest of the Room, in the colours of the older figures they replace
+  joseph:{ name:'Joseph', height:1.778, skin:'#9a6440', iris:'#2e1c12', lip:'#8e4a3a', mouth:'grin', brow:.0036,
+    hair:{ kind:'afro', color:'#15110e', c:[0,1.625,-.045], r:[.12,.112,.116], bump:.024, n:230, cr:.14, hi:'#2b201a' },
+    top:{ kind:'hoodie', cloth:'#b8322c', strings:'#f3efe7' }, cans:{ color:'#1e1e22', ring:'#d6ff4b' },
+    legs:{ kind:'jogger', color:'#2e3742' }, shoes:{ kind:'sneaker', upper:'#e9e6de', sole:'#f1ede6', lace:'#d4cec4' } },
+  joshua:{ name:'Joshua', height:1.753, skin:'#6e432b', iris:'#3a2214', lip:'#7a3f2c', mouth:'smile', brow:.004,
+    hair:{ kind:'buzz', color:'#0f0d0c' },
+    top:{ kind:'tee', cloth:'#2f5d3a' },
+    legs:{ kind:'jogger', color:'#3a3f47' }, shoes:{ kind:'sneaker', upper:'#1b1b1b', sole:'#f1ede6', lace:'#2a2a2a' } },
+  will:{ name:'Will', height:1.753, skin:'#8a5636', iris:'#2b1a10', lip:'#8e4a3a', mouth:'smile', brow:.0032,
+    hair:{ kind:'afro', color:'#0d0b0a', c:[0,1.6,-.035], r:[.11,.098,.106], bump:.012, n:200, cr:.14 },
+    top:{ kind:'hoodie', cloth:'#6a2c3a', strings:'#efe9dc' },
+    legs:{ kind:'jogger', color:'#2c2f36' }, shoes:{ kind:'sneaker', upper:'#f2f0ea', sole:'#e7e2d9', lace:'#d4cec4' } },
+  dewan:{ name:'Dewan', height:1.778, skin:'#7a4a2e', iris:'#2e1c10', lip:'#8e4a3a', mouth:'smile', brow:.0038,
+    hair:{ kind:'buzz', color:'#0e0c0b' },
+    top:{ kind:'hoodie', cloth:'#2f6f73', strings:'#efe9dc' },
+    legs:{ kind:'jogger', color:'#2a2c31' }, shoes:{ kind:'sneaker', upper:'#f2f0ea', sole:'#e7e2d9', lace:'#d4cec4' } },
+  sleeper:{ name:'The Sleeper', height:1.753, skin:'#e0b48f', iris:'#4a2a17', lip:'#b07a68', mouth:'flat', brow:.0034,
+    hair:{ kind:'afro', color:'#111014', c:[0,1.615,-.04], r:[.116,.104,.11], bump:.01, n:180, cr:.12 },
+    top:{ kind:'tee', cloth:'#e6e2d8' },
+    legs:{ kind:'jogger', color:'#3b4a5c' }, shoes:{ kind:'sneaker', upper:'#2a2a28', sole:'#e7e2d9', lace:'#3a3a38' } },
 };
 
 // torso rows [y, half width, half depth] up to the base of the neck, per garment
@@ -747,7 +768,38 @@ export function buildCharacter(sp){
     hold(Lc, off, 'L', chin.addScaledVector(up, -.085 - .01*Math.sin(2*Math.PI*u*10)).addScaledVector(fw, -.01), v(.6, -1, .5), up, fw.clone().negate());
     for (const n of ['upper_armL','forearmL','handL']) P[n] = [Lk[n][0].clone().slerp(Lc[n][0], c)];
     return [P, off]; };
-  for (const c of [clip('CubeIdle', cubeIdle, 240), clip('CubeWalk', cubeWalk, 30), clip('Laptop', laptop, 150), clip('Scroll', scroll, 240), clip('Chess', chess, 165)]) act[c.name] = mixer.clipAction(c);
+  // gaming in a desk chair: the laptop pose's seat, a pad held in both hands over the lap, thumbs working, eyes up on the screen
+  const game = u => { const w = 2*Math.PI*u, off = [0, SEAT - .87, -.03], th = k => .005*Math.sin(14*w + k)*Math.sin(5*w + 2*k);
+    const P = { hips:[[X, -.05]], spine:[[X, .14 + .01*Math.sin(w)]], chest:[[X, .06]], neck:[[X, .02]], head:[[X, -.04],[Y, .03*Math.sin(2*w)]] };
+    plant(P, off, 'L', v(.15, .085, .42), v(0, .3, 1));
+    plant(P, off, 'R', v(-.15, .085, .42), v(0, .3, 1));
+    for (const [s,S] of SIDES) hold(P, off, S, v(s*.085 + th(s), .83 + th(s + 1), .27), v(s*.9, -.6, -.3), v(-s*.35, .25, 1), v(-s*.5, -.8, .1));
+    if (u === 0) props.pad = { p:v(0, .845, .33), q:qa(X, -.35) };
+    return [P, off]; };
+
+  // sunk into a beanbag: leaning back, knees up, a sketchbook against the thighs; the left hand holds it, the right one draws
+  const SEATB = .42;
+  const sketch = u => { const w = 2*Math.PI*u, off = [0, SEATB - .87, 0], dr = k => .01*Math.sin(9*w + k) + .005*Math.sin(23*w + 2*k);
+    const P = { hips:[[X, -.5]], spine:[[X, .2]], chest:[[X, .14 + .01*Math.sin(w)]], neck:[[X, .3]], head:[[X, .3],[Y, .04*Math.sin(w)]] };
+    const kL = plant(P, off, 'L', v(.15, .085, .4), v(.25, .5, 1)), kR = plant(P, off, 'R', v(-.15, .085, .4), v(-.25, .5, 1));
+    const hp = toPose(P, off, 'hips', v(0, .87, 0)), kn = kL.clone().add(kR).multiplyScalar(.5), thigh = kn.clone().sub(hp).normalize();
+    const bk = hp.clone().lerp(kn, .62).add(v(0, .07, 0)), nrm = v(0, 1, 0).projectOnPlane(thigh).normalize();
+    hold(P, off, 'L', bk.clone().add(v(.12, .0, -.02)), v(1, -.4, -.3), thigh.clone().add(v(-.4, 0, 0)), v(-1, 0, 0));
+    hold(P, off, 'R', bk.clone().addScaledVector(nrm, .05).add(v(-.03 + dr(0), 0, dr(1))), v(-1, -.4, -.3), v(.35, -.5, .8), nrm.clone().negate());
+    if (u === 0) props.book = { p:bk, q:new THREE.Quaternion().setFromUnitVectors(v(0, 1, 0), nrm) };
+    return [P, off]; };
+
+  // asleep on the back along a bunk, head turned to one side, one hand on the belly and the other by the side; slow breaths
+  const sleep = u => { const w = 2*Math.PI*u, br = Math.sin(2*w), off = [0, .105 - .92, 0];
+    const P = { hips:[[X, -1.45]], spine:[[X, .06 + .012*br]], chest:[[X, .05 + .015*br]], neck:[[X, .18]], head:[[X, .2],[Y, .55]] };
+    plant(P, off, 'L', v(.13, .075, .72), v(.4, 1, 0), qa(X, -1.3));
+    plant(P, off, 'R', v(-.1, .06, .92), v(0, 1, 0), qa(X, -1.45));
+    const side = toPose(P, off, 'spine', X, true), bn = toPose(P, off, 'spine', v(0, .2, 1), true).normalize(), belly = toPose(P, off, 'spine', v(.03, 1.05, .125));
+    hold(P, off, 'L', belly.addScaledVector(bn, .015).addScaledVector(side, .07), side.clone().addScaledVector(bn, -.3), side.clone().negate().addScaledVector(bn, -.25), bn.clone().negate());
+    hold(P, off, 'R', v(-.25, .055, .08), v(-1, .4, 0), v(0, -.1, 1), v(0, -1, 0));
+    return [P, off]; };
+  for (const c of [clip('CubeIdle', cubeIdle, 240), clip('CubeWalk', cubeWalk, 30), clip('Laptop', laptop, 150), clip('Scroll', scroll, 240), clip('Chess', chess, 165),
+    clip('Game', game, 180), clip('Sketch', sketch, 240), clip('Sleep', sleep, 240)]) act[c.name] = mixer.clipAction(c);
   // three.js only writes a bone when its clip value changes, so anything turned on top of a held pose (a look, a reach, a flick) would pile up frame after frame.
   // Each update starts from the clip's own last pose instead, so whatever is layered on top lasts one frame
   const base = names.map(n=>bones[n].quaternion.clone()), hipP = bones.hips.position.clone(), mixUpdate = mixer.update.bind(mixer);
@@ -781,9 +833,11 @@ export function buildCharacter(sp){
     obj.position.copy(b.worldToLocal(body.localToWorld(p.clone()))); b.getWorldQuaternion(bq); body.getWorldQuaternion(yq); obj.quaternion.copy(bq.invert().multiply(yq).multiply(q)); b.add(obj); return obj; };
 
   // blinking is driven here, so it keeps going under any clip
-  const OPEN = -.66, SHUT = 1.15; let bt = 1.5 + Math.random(); lids.forEach(l=>l.rotation.x = OPEN);
-  const tick = dt => { bt -= dt; if (bt < -.16) bt = 2.4 + Math.random()*2.6; const k = bt < 0 ? Math.sin(Math.min(1, -bt/.16)*Math.PI) : 0; for (const l of lids) l.rotation.x = lerp(OPEN, SHUT, k); };
+  const OPEN = -.66, SHUT = 1.15; let bt = 1.5 + Math.random(), shut = 0; lids.forEach(l=>l.rotation.x = OPEN);
+  const tick = dt => { bt -= dt; if (bt < -.16) bt = 2.4 + Math.random()*2.6; const k = Math.max(shut, bt < 0 ? Math.sin(Math.min(1, -bt/.16)*Math.PI) : 0); for (const l of lids) l.rotation.x = lerp(OPEN, SHUT, k); };
+  // eyes: 1 keeps them shut (asleep), 0 leaves them to blink
+  const eyes = k => { shut = k; };
   // hand shape per side: open, relax, type, grip or pinch
   const hand = (S, kind) => { for (const k in hands[S]) hands[S][k].visible = k === kind; };
-  return { root, head:bones.head, bones, mixer, act, tick, height:sp.height, look, reach, anchor, props, hand, tips };
+  return { root, head:bones.head, bones, mixer, act, tick, height:sp.height, look, reach, anchor, props, hand, tips, eyes };
 }
