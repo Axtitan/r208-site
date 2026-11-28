@@ -144,7 +144,13 @@ strictLimits(true);
 controls.update();
 
 /* ---------- helpers ---------- */
-const mat = (color, o={}) => new THREE.MeshStandardMaterial({ color, roughness:.82, metalness:0, ...o });
+// one look for the room and the crew: the room's surfaces take the crew's three flat bands of light, and ink lines (?style=pbr: the old shading)
+const TOON = !/[?&]style=pbr\b/.test(location.search);
+const rampT = new THREE.DataTexture(new Uint8Array([110, 190, 255]), 3, 1, THREE.RedFormat); rampT.minFilter = rampT.magFilter = THREE.NearestFilter; rampT.needsUpdate = true;
+const TOONKEYS = new THREE.MeshToonMaterial();
+const mat = (color, o={}) => { if (!TOON) return new THREE.MeshStandardMaterial({ color, roughness:.82, metalness:0, ...o });
+  const r = {}; for (const k in o) if (k in TOONKEYS) r[k] = o[k];
+  const m = new THREE.MeshToonMaterial({ color, gradientMap:rampT, toneMapped:false, ...r }); m.userData.room = true; return m; };
 const glow = (color) => new THREE.MeshBasicMaterial({ color, toneMapped:false });
 function box(w,h,d,m,r=0){
   const g = r ? new RoundedBoxGeometry(w,h,d,3,r) : new THREE.BoxGeometry(w,h,d);
@@ -1066,7 +1072,7 @@ function register(entry, objects){
   for (const obj of objects){
     obj.traverse(o=>{
       if (!o.isMesh) return;
-      if (o.material?.isMeshStandardMaterial){ o.material = o.material.clone(); entry.mats.push(o.material); }
+      if (o.material?.isMeshStandardMaterial || o.material?.userData?.room){ o.material = o.material.clone(); entry.mats.push(o.material); }
       o.userData.entry = entry; if (!o.userData.noPick) pickables.push(o);
     });
   }
@@ -1575,31 +1581,50 @@ function animate(){
   // Dewan: walks between spots round the room and shoots what's there (the pizza, the chess, the plant, Joseph at the desk).
   // Lines up the shot, then the flash fires; when clicked the camera turns on you; when you borrow it, the hands are free
   { const f = figs.shooter, on = active?.id === 'shooter', lend = photoCtl.busy, w = f.walk, A = f.t.act, sub = DSPOTS[w.i].at();
+    // something waiting to go on the wall: off to the board, round the plant
+    if (pinQ.length && w.state === 'shoot' && !on && !lend && !modes.current){ w.route = PIN_ROUTE.map(p => p.clone()); w.pin = true; w.state = 'walk'; toast('Dewan is pinning it up on the wall.'); }
     if (w.state === 'shoot' && t > w.until && !on && !lend && !modes.current){ let j; do j = rand()*DSPOTS.length|0; while (j === w.i); w.i = j; w.state = 'walk'; }
     let want = 0;
-    if (w.state === 'walk' && !on && !lend){ const P = DSPOTS[w.i].p; v3.set(P.x - f.root.position.x, 0, P.z - f.root.position.z); const d = v3.length();
-      if (d < .03) w.state = 'aim';
+    if (w.state === 'walk' && !on && !lend){ const P = w.route?.length ? w.route[0] : DSPOTS[w.i].p; v3.set(P.x - f.root.position.x, 0, P.z - f.root.position.z); const d = v3.length();
+      if (d < .03){ if (w.route?.length){ w.route.shift(); if (!w.route.length && w.pin) w.state = 'pinaim'; } else w.state = 'aim'; }
       else { want = .42*Math.min(1, .3 + d/.4); turnTo(w, Math.atan2(v3.x, v3.z), dt*5); v3.multiplyScalar(Math.min(f.spd*dt, d)/d); f.root.position.add(v3); } }
     if (w.state === 'aim' && turnTo(w, Math.atan2(sub.x - f.root.position.x, sub.z - f.root.position.z), dt*3) < .03){ w.state = 'shoot'; w.until = t + 16 + rand()*14; f.nextShot = t + 1.5; }
+    if (w.state === 'pinaim' && turnTo(w, Math.PI/2, dt*4) < .03){ w.state = 'pin'; w.pinT = 0; w.item = null; }
+    const pinning = w.state === 'pin' || w.state === 'pinaim';
+    // each one: take it off the pile, reach up, press it on, hand back down; then back out the way he came and shoot the plant
+    if (w.state === 'pin'){
+      if (!w.item && pinQ.length){ const q = pinQ.shift(); w.slot = nextSlot(); w.item = pinItem(q.c); w.placed = false; room.add(w.item); }
+      // a sidestep along the wall first, so the spot is in front of his right hand
+      const dz = board.localToWorld(pinV.set(SLOTS[w.slot ?? 0][0], 0, 0)).z - .1 - f.root.position.z;
+      if (w.pinT === 0 && Math.abs(dz) > .01){ f.root.position.z += Math.sign(dz)*Math.min(Math.abs(dz), .5*dt); want = .2; } else w.pinT += dt;
+      if (w.item && !w.placed && w.pinT > .75){ room.remove(w.item); place(w.item, w.slot); w.placed = true; }
+      if (w.pinT > 2.0){ w.pinT = 0; w.item = null;
+        if (!pinQ.length){ w.pin = false; w.route = [PIN_ROUTE[1].clone(), PIN_ROUTE[0].clone()]; w.i = 2; w.state = 'walk';
+          say('shooter', ['Up on the wall.', 'That one’s a keeper.', 'The gallery’s looking good.'][rand()*3|0], 2.4); } } }
     f.root.rotation.y = w.yaw;
     f.spd += (want - f.spd)*Math.min(1, dt*4); const g = THREE.MathUtils.clamp(f.spd/.42, 0, 1);
     A.Walk.setEffectiveWeight(g); A.Idle.setEffectiveWeight(1 - g); A.Walk.timeScale = Math.max(.3, f.spd/f.stride);
-    spring(f, 'lendK', lend ? 1 : 0, 6, dt); const hold = THREE.MathUtils.clamp(1 - Math.max(f.lendK, g*1.5), 0, 1);
+    spring(f, 'lendK', lend ? 1 : 0, 6, dt); f.pinK = (f.pinK || 0) + ((pinning ? 1 : 0) - (f.pinK || 0))*Math.min(1, dt*5);
+    const hang = Math.max(g, f.pinK), hold = THREE.MathUtils.clamp(1 - Math.max(f.lendK, hang*1.5), 0, 1);
     if ((hold > .5) !== f.grip){ f.grip = hold > .5; f.t.hand('L', f.grip ? 'grip' : 'relax'); f.t.hand('R', f.grip ? 'grip' : 'relax'); }
     if (w.state === 'shoot' && t > f.nextShot && !lend){ f.shotAt = t; f.nextShot = t + 3.5 + rand()*3; }
     const since = t - f.shotAt, fl = since < .12 ? 1 - since/.12 : 0, dip = since < .5 ? Math.sin(since/.5*Math.PI) : 0;
     f.flashBulb.material.opacity = fl;   // (just the bulb: a real flash lit the whole room every few seconds)
     f.t.mixer.update(dt); f.t.tick(dt);
-    const shootK = (1 - f.lookW)*(1 - g); f.t.bones.spine.rotateX(.06*shootK + .03*dip);
+    const shootK = (1 - f.lookW)*(1 - hang); f.t.bones.spine.rotateX(.06*shootK + .03*dip);
     // the lens points at the subject, at you when you click, and hangs down on its strap while Dewan walks
-    const camP = f.cam.parent; camP.visible = f.lendK < .5; camP.position.copy(f.camBase); camP.position.y -= .16*g;
+    const camP = f.cam.parent; camP.visible = f.lendK < .5; camP.position.copy(f.camBase); camP.position.y -= .16*hang;
     camP.getWorldPosition(v3); const pitch = THREE.MathUtils.clamp(Math.atan2(v3.y - sub.y, Math.hypot(sub.x - v3.x, sub.z - v3.z)), -.2, 1.0);
-    f.cam.rotation.x = THREE.MathUtils.lerp(THREE.MathUtils.lerp(pitch, 1.3, g), -.15, f.lookW) - .05*dip;
+    f.cam.rotation.x = THREE.MathUtils.lerp(THREE.MathUtils.lerp(pitch, 1.3, hang), -.15, f.lookW) - .05*dip;
     if (hold > .01){ f.cam.updateWorldMatrix(true, false); f.cam.getWorldQuaternion(dewQ);
       const rt = dirOf(dewQ, 1, 0, 0), fw = dirOf(dewQ, 0, 0, 1), up = dirOf(dewQ, 0, 1, 0);
       for (const [s,S] of [[1,'L'],[-1,'R']]){ f.cam.localToWorld(v3.set(s*.075, -.012, -.004));
         f.t.reach(S, v3, hold, rt.clone().multiplyScalar(s).addScaledVector(up, -1.2), fw.clone().addScaledVector(rt, -s*.3), rt.clone().multiplyScalar(-s)); } }
-    lookAt(f, on || lend ? camera.position : sub, on || lend || w.state !== 'walk', dt);
+    if (w.state === 'pin'){ const T = w.pinT, k = T < .7 ? THREE.MathUtils.smoothstep(T/.7, 0, 1) : T < 1.4 ? 1 : 1 - THREE.MathUtils.smoothstep((T - 1.4)/.6, 0, 1);
+      board.localToWorld(pinV.set(SLOTS[w.slot][0], SLOTS[w.slot][1] - .07, .05));
+      f.t.reach('R', pinV, k, dewV.set(-1, 0, 0).applyQuaternion(f.root.quaternion).add(V(0, -1.2, 0)), PIN_UP, pinN.set(0, 0, -1).transformDirection(board.matrixWorld));   // palm flat on the board, fingers up
+      if (w.item && !w.placed){ f.t.bones.handR.getWorldPosition(w.item.position); board.getWorldQuaternion(w.item.quaternion); w.item.position.x += .03; } }
+    lookAt(f, on || lend ? camera.position : pinning ? board.localToWorld(pinV.set(SLOTS[w.slot ?? 0][0], SLOTS[w.slot ?? 0][1], 0)) : sub, on || lend || pinning || w.state !== 'walk', dt);
   }
   // Ebunrere: thinks (strokes the beard), then leans in and moves a piece with the right hand; the board module decides which and when
   { const f = figs.chess, on = active?.id === 'chess', A = chessCtl.anim, b = f.t.bones, a = f.t.act.Chess, q = f.root.quaternion, d = (x,y,z) => new THREE.Vector3(x,y,z).applyQuaternion(q);
@@ -1692,6 +1717,37 @@ addEventListener('resize', ()=>{
   modes.current?.resize?.();
 });
 
+/* ---------- the pinboard: Dewan pins up your photos and Will's sketches ---------- */
+// on the right-hand wall above Joshua's plant; Dewan gets to it between the plant and the stand
+const BOARD = { y:1.27, z:-.775, w:.75, h:.5 }, pinV = new THREE.Vector3(), pinN = new THREE.Vector3(), PIN_UP = new THREE.Vector3(0, 1, 0);
+const corkT = canvasTex(256, 170, (g,w,h)=>{ g.fillStyle = '#b8895a'; g.fillRect(0,0,w,h);
+  for (let i=0;i<1400;i++){ g.fillStyle = rand() < .5 ? 'rgba(110,70,35,.35)' : 'rgba(225,190,140,.35)'; g.fillRect(rand()*w, rand()*h, 1 + rand()*2, 1 + rand()*2); } });
+const board = new THREE.Group(); board.position.set(W/2 - .012, BOARD.y, BOARD.z); board.rotation.y = -Math.PI/2; room.add(board);
+board.add(box(BOARD.w + .05, BOARD.h + .05, .022, mat(0x7a4e2c)));
+const cork = new THREE.Mesh(new THREE.PlaneGeometry(BOARD.w, BOARD.h), mat(0xffffff, { map:corkT.tex, roughness:1 })); cork.position.z = .0115; cork.receiveShadow = true; board.add(cork);
+const SLOTS = [[-.245,.115],[0,.125],[.245,.105],[-.245,-.115],[0,-.11],[.245,-.12]], pinned = new Array(SLOTS.length).fill(null);
+let pinOrder = [];
+const pinMs = [0xe3242b, 0x2f6fd6, 0xf2c230, 0x2fa35a].map(c => mat(c, { roughness:.4 }));
+function pinItem(canvas, size = .2){
+  const t = new THREE.CanvasTexture(canvas); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  const a = canvas.width/canvas.height, w = a >= 1 ? size : size*a, h = a >= 1 ? size/a : size;
+  const g = new THREE.Group(), p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat(0xffffff, { map:t, roughness:1 })); p.receiveShadow = true; g.add(p);
+  const pin = new THREE.Mesh(new THREE.SphereGeometry(.009, 10, 8), pinMs[rand()*pinMs.length|0]); pin.position.set(0, h/2 - .02, .008); g.add(pin);
+  g.rotation.z = (rand() - .5)*.16; g.userData.tex = t; return g;
+}
+function place(g, slot){
+  const old = pinned[slot]; if (old){ board.remove(old); old.userData.tex.dispose(); }
+  pinned[slot] = g; pinOrder = pinOrder.filter(s => s !== slot).concat(slot);
+  g.position.set(SLOTS[slot][0], SLOTS[slot][1], .016); g.quaternion.identity(); g.rotation.z = (rand() - .5)*.16; board.add(g);
+}
+const nextSlot = () => { const free = pinned.findIndex(p => !p); return free >= 0 ? free : pinOrder[0]; };
+for (const [i, bg, lines] of [[1, '#ffe66b', ['MVP', 'friday!!']], [3, '#ff9bc0', ['who ate my', 'indomie?']]]){
+  const c = canvasTex(128, 128, g=>{ g.fillStyle = bg; g.fillRect(0,0,128,128); g.fillStyle = '#2a2826'; g.font = '700 22px "Space Grotesk", sans-serif'; g.textAlign = 'center'; lines.forEach((l, k) => g.fillText(l, 64, 58 + k*28)); }).canvas;
+  place(pinItem(c, .13), i); }
+// what the games hand over: a copy, queued for Dewan's next trip to the board
+const pinQ = [], PIN_ROUTE = [V(2.0, 0, -.27), V(2.8, 0, -.27), V(2.8, 0, -.76)];
+ctx.pin = (canvas) => { const c = document.createElement('canvas'); c.width = canvas.width; c.height = canvas.height; c.getContext('2d').drawImage(canvas, 0, 0); pinQ.push({ c }); if (pinQ.length > SLOTS.length) pinQ.shift(); };
+
 /* ---------- grounding: soft shadows where things meet, under furniture and under people ---------- */
 // (painted, not computed: they can't flicker, and they cost a few quads)
 const aoM = (map, o) => new THREE.MeshBasicMaterial({ color:0x000000, map, transparent:true, opacity:o, depthWrite:false, side:THREE.DoubleSide, toneMapped:false,
@@ -1739,7 +1795,23 @@ function bakeEnv(){
   envRT?.dispose(); envRT = rt; scene.environment = rt.texture;
   scene.traverse(o => { const ms = o.material ? [o.material].flat() : []; for (const m of ms) if (m.isMeshStandardMaterial) m.envMapIntensity = .85; });
 }
-bakeEnv(); envReady = true;
+if (TOON){
+  // a back-facing shell round each thing, pushed out a steady width on screen: the same ink as the crew
+  const figSet = new Set(); Object.values(figs).forEach(f => f.root.traverse(o => figSet.add(o)));
+  const inkM = new THREE.MeshBasicMaterial({ color:0x1b1514, side:THREE.BackSide, toneMapped:false });
+  inkM.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', `vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);
+    mvPosition.xyz += normalize(normalMatrix * normal) * .0017 * max(.4, -mvPosition.z);
+    gl_Position = projectionMatrix * mvPosition;`); };
+  inkM.customProgramCacheKey = () => 'room-ink';
+  const shells = new Map(), ws = new THREE.Vector3(), list = [];
+  room.traverse(o => { if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || figSet.has(o) || !o.material?.userData?.room || o.material.transparent || o.userData.noInk) return;
+    if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); o.getWorldScale(ws);
+    const r = o.geometry.boundingSphere.radius*Math.max(ws.x, ws.y, ws.z); if (r >= (LITE ? .12 : .035) && r < 2.4) list.push(o); });
+  for (const o of list){ let g = shells.get(o.geometry);
+    if (!g){ g = new THREE.BufferGeometry(); g.setAttribute('position', o.geometry.attributes.position); if (o.geometry.index) g.setIndex(o.geometry.index);
+      g = mergeVertices(g, 1e-4); g.computeVertexNormals(); shells.set(o.geometry, g); }
+    const ol = new THREE.Mesh(g, inkM); ol.raycast = () => {}; ol.userData.outline = true; ol.userData.noPick = true; o.add(ol); }
+} else { bakeEnv(); envReady = true; }
 
 // someone standing between you and the person you opened, or right in front of the lens, steps out of the picture
 const occA = new THREE.Vector3(), occB = new THREE.Vector3();

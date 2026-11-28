@@ -28,7 +28,7 @@ export function createPhoto(ctx){
     g.fillStyle = '#f6f3ec'; g.fillRect(0, 0, 680, 590); g.drawImage(ph, 20, 20);
     g.fillStyle = '#2a2826'; g.font = '500 26px "Space Grotesk", sans-serif'; g.fillText('Room 208', 24, 548);
     g.fillStyle = '#8b8780'; g.font = '400 20px "Geist", sans-serif'; g.textAlign = 'right'; g.fillText(new Date().toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' }), 656, 548);
-    shots.unshift(pr); if (shots.length > 4) shots.pop(); S.n++;
+    shots.unshift(pr); if (shots.length > 4) shots.pop(); S.n++; ctx.pin?.(pr, 'photo');   // Dewan pins it up afterwards
     flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
     // Dewan's comments go in the panel: a speech bubble would sit right in the shot
     const line = S.n === 1 ? 'Nice. Steady hands.' : rand() < .6 ? ['Ooh, that one’s good.', 'Get the window light in.', 'Okay, photographer.', 'Frame it a bit lower.', 'Send me that one.'][rand()*5|0] : '';
@@ -145,7 +145,7 @@ export function createSketch(ctx, { pageT }){
       for (const t of S.tiles.splice(0, n)){ g.drawImage(S.sk, t.x, t.y, 20, 20, t.x, t.y, 20, 20);
         pg.drawImage(S.sk, t.x, t.y, 20, 20, 6 + t.x*116/W, 6 + t.y*156/H, 20*116/W + .5, 20*156/H + .5); }
       pageT.tex.needsUpdate = true;
-      if (!S.tiles.length){ ui.status(`<b>${NAMES[S.who][0].toUpperCase() + NAMES[S.who].slice(1)}</b>, by Will.`); buttons(true); say('artist', ['Done. Not bad, right?', 'There. Signed, Will.', 'Okay, that’s actually good.'][rand()*3|0], 2.4); }
+      if (!S.tiles.length){ ctx.pin?.(S.cv, 'sketch'); ui.status(`<b>${NAMES[S.who][0].toUpperCase() + NAMES[S.who].slice(1)}</b>, by Will.`); buttons(true); say('artist', ['Done. Not bad, right?', 'There. Signed, Will.', 'Okay, that’s actually good.'][rand()*3|0], 2.4); }
     },
   };
 }

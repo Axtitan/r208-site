@@ -171,10 +171,12 @@ export const CREW = {
     hair:{ kind:'afro', color:'#15110e', c:[0,1.625,-.045], r:[.12,.112,.116], bump:.024, n:230, cr:.14, hi:'#2b201a' },
     top:{ kind:'hoodie', cloth:'#b8322c', strings:'#f3efe7' }, cans:{ color:'#1e1e22', ring:'#d6ff4b' },
     legs:{ kind:'jogger', color:'#2e3742' }, shoes:{ kind:'sneaker', upper:'#e9e6de', sole:'#f1ede6', lace:'#d4cec4' } },
-  joshua:{ name:'Joshua', height:1.753, skin:'#6e432b', iris:'#3a2214', lip:'#7a3f2c', mouth:'smile', brow:.004,
-    hair:{ kind:'buzz', color:'#0f0d0c' },
-    top:{ kind:'tee', cloth:'#2f5d3a' },
-    legs:{ kind:'jogger', color:'#3a3f47' }, shoes:{ kind:'sneaker', upper:'#1b1b1b', sole:'#f1ede6', lace:'#2a2a2a' } },
+  joshua:{ name:'Joshua', height:1.753, skin:'#a65e38', iris:'#2e1c12', lip:'#8a4b3a', lipLine:'#6e3a2c', mouth:'smile', brow:.0038,
+    hair:{ kind:'afro', color:'#120f0e', c:[0,1.615,-.035], r:[.111,.1,.107], bump:.013, n:210, cr:.14, hi:'#2a201b' },
+    beard:{ kind:'jaw', color:'#16110f', thick:.0016 },
+    top:{ kind:'sweater', vest:true, v:1.29, vw:.05, knit:['#ffffff','#e2ded8',.1], bands:{ top:1.31, h:.042, cols:['#f2ece9','#7a7a7d','#33314b'], above:'#33314b' },
+      band:['#33314b','#26253a',.24], trim:['#33314b','#26253a',.2], shirt:'#bacaf4', collar:'#c8d6f6', tie:{ base:'#1a1819' } },
+    legs:{ color:'#2c2e48' }, shoes:{ kind:'oxford', upper:'#1d1b1c', sole:'#121011', lace:'#2b2829' } },
   will:{ name:'Will', height:1.753, skin:'#8a5636', iris:'#2b1a10', lip:'#8e4a3a', mouth:'smile', brow:.0032,
     hair:{ kind:'afro', color:'#0d0b0a', c:[0,1.6,-.035], r:[.11,.098,.106], bump:.012, n:200, cr:.14 },
     top:{ kind:'hoodie', cloth:'#6a2c3a', strings:'#efe9dc' },
@@ -218,7 +220,7 @@ export const buildTerence = () => buildCharacter(CREW.terence);
 
 export function buildCharacter(sp){
   const T = sp.top, K = T.kind, polo = K === 'polo', suit = K === 'suit', GL = sp.glasses, SH = sp.shoes, LG = sp.legs, jog = LG.kind === 'jogger';
-  const casual = K === 'tee' || K === 'hoodie' || K === 'crew', short = polo || K === 'tee', knitted = !suit && !short, shirted = K === 'sweater' || K === 'bomber';
+  const casual = K === 'tee' || K === 'hoodie' || K === 'crew', short = polo || K === 'tee', knitted = !suit && !short, shirted = K === 'sweater' || K === 'bomber', vest = !!T.vest;
   const root = new THREE.Group(), body = new THREE.Group(); root.name = sp.name; body.scale.setScalar(sp.height/1.75); root.add(body);
   // cel shading: three flat bands of light
   const ramp = new THREE.DataTexture(new Uint8Array([110, 190, 255]), 3, 1, THREE.RedFormat); ramp.minFilter = ramp.magFilter = THREE.NearestFilter; ramp.needsUpdate = true;
@@ -239,6 +241,12 @@ export function buildCharacter(sp){
     button:toon(suit ? '#1b191a' : polo ? '#3a3639' : '#f3f1ec', .5), square:toon(T.square || '#ffffff', 0), zip:toon('#d2ae55', 0),
   };
   if (M.tie && M.tie.map) M.tie.map.repeat.set(1, K === 'sweater' ? 2 : 5);
+  if (T.bands){ const B = T.bands, C = c => ({ value:new THREE.Color(c) }), U = { bTop:{ value:B.top }, bH:{ value:B.h }, bC0:C(B.cols[0]), bC1:C(B.cols[1]), bC2:C(B.cols[2]), bUp:C(B.above) };
+    M.knit.onBeforeCompile = sh => { Object.assign(sh.uniforms, U);
+      sh.vertexShader = 'varying float vBandY;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vBandY = position.y;');
+      sh.fragmentShader = 'varying float vBandY;\nuniform float bTop, bH;\nuniform vec3 bC0, bC1, bC2, bUp;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+  { float bi = (bTop - vBandY)/bH, k = mod(floor(bi), 3.0); diffuseColor.rgb *= bi < 0.0 ? bUp : k < .5 ? bC0 : k < 1.5 ? bC1 : bC2; }`); };
+    M.knit.customProgramCacheKey = () => 'crew-bands'; }
   if (GL){ M.frame = GL.frame === 'ink' ? M.ink : toon(GL.frame, 0);
     M.lens = new THREE.MeshBasicMaterial({ map:lensTex(GL.lens), transparent:true, depthWrite:false, side:THREE.DoubleSide, toneMapped:false }); M.lens.userData.ol = 0; M.lens.userData.noShadow = true; }
   M.ink.userData.noShadow = true;
@@ -283,21 +291,22 @@ export function buildCharacter(sp){
   const tN = (a, y) => { const e = .003, du = tP(a + e, y).sub(tP(a - e, y)), dv = tP(a, y + e).sub(tP(a, y - e)); return dv.cross(du).normalize(); };
   const NA = 48, A = i => 2*Math.PI*i/NA, fromFront = a => Math.abs(Math.atan2(Math.sin(a - Math.PI/2), Math.cos(a - Math.PI/2)));
   const yIn = a => NZ - .003 - (K === 'tee' ? .022 : .015)*Math.exp(-((fromFront(a)/.8)**2));
-  const sw = new Geo(), bands = new Geo(), cuffs = new Geo(), arms = new Geo(), HEM = HEMS[K];
+  const sw = new Geo(), bands = new Geo(), cuffs = new Geo(), arms = new Geo(), slv = new Geo(), HEM = HEMS[K];
   sw.loft(TS.map(([y,rx,rz])=>ring(v(0,y,0), rx, rz, NA, [X,Z], TE).map((p,i)=>casual && p.y > yIn(A(i)) ? tP(A(i), yIn(A(i))) : p)), TS.map(([y])=>wt(y)), { cap:[true,false], urep:T.stripe ? 40 : 28 });
   if (HEM) bands.loft(HEM.map(([y,rx,rz])=>ring(v(0,y,0), rx, rz, 48, [X,Z], TE)), HEM.map(([y])=>wt(y)), { cap:[true,false], urep:72 });
   for (const [s,S] of SIDES){
     const rows = resample(SLEEVES[K], 3, 1), rg = (t, r, f) => ring(armPt(s,t), r, r, 20, [Z, armOut(s)], 2, f);
     const wa = t => { const c = .5*(1 - sst(-.02,.08,t)), e = sst(.21,.32,t); return { chest:c, ['upper_arm'+S]:(1-c)*(1-e), ['forearm'+S]:(1-c)*e }; };
     const fold = (t,a) => knitted ? 1 + .02*Math.sin(t*80 + 1.5*Math.sin(a*2 + s))*sst(.33,.41,t)*(1 - sst(.425,.435,t)) : 1;
-    sw.loft(rows.map(([t,r])=>rg(t, r, a=>fold(t,a))), rows.map(([t])=>wa(t)), { urep:T.stripe ? 12 : 9 });
-    if (knitted){ const CF = K === 'bomber' || K === 'hoodie' ? [[.43,.047],[.438,.05],[.48,.049],[.487,.045]] : [[.43,.046],[.438,.049],[.48,.048],[.487,.044]]; bands.loft(CF.map(([t,r])=>rg(t,r)), { ['forearm'+S]:1 }, { urep:22 }); }
+    (vest ? slv : sw).loft(rows.map(([t,r])=>rg(t, r, a=>fold(t,a))), rows.map(([t])=>wa(t)), { urep:T.stripe ? 12 : 9 });
+    if (vest){ const AH = [[-.016,.049],[-.012,.054],[.008,.0555],[.012,.051]]; bands.loft(AH.map(([t,r])=>rg(t,r)), AH.map(([t])=>wa(t)), { urep:22 }); }
+    if (knitted){ const CF = K === 'bomber' || K === 'hoodie' ? [[.43,.047],[.438,.05],[.48,.049],[.487,.045]] : [[.43,.046],[.438,.049],[.48,.048],[.487,.044]]; (vest ? cuffs : bands).loft(CF.map(([t,r])=>rg(t,r)), { ['forearm'+S]:1 }, { urep:22 }); }
     if (suit) cuffs.loft([[.446,.041],[.45,.043],[.474,.043],[.478,.041]].map(([t,r])=>rg(t,r)), { ['forearm'+S]:1 });       // shirt cuff below the jacket sleeve
     if (short){ const SB = [[.176,.059],[.181,.0625],[.2,.0625],[.205,.059]]; bands.loft(SB.map(([t,r])=>rg(t,r)), SB.map(([t])=>wa(t)), { urep:22 });   // short sleeve hem, then bare arms
       const AR = resample([[.17,.04],[.24,.037],[.3,.034],[.38,.032],[.45,.029],[.495,.028]], 2, 1);
       arms.loft(AR.map(([t,r])=>ring(armPt(s,t), r, r*.92, 16, [Z, armOut(s)])), AR.map(([t])=>{ const e = sst(.22,.32,t); return { ['upper_arm'+S]:1-e, ['forearm'+S]:e }; })); }
   }
-  skinned(sw, M.knit); if (bands.p.length) skinned(bands, M.band); if (cuffs.p.length) skinned(cuffs, M.shirt); if (arms.p.length) skinned(arms, M.skin);
+  skinned(sw, M.knit); if (slv.p.length) skinned(slv, M.shirt); if (bands.p.length) skinned(bands, M.band); if (cuffs.p.length) skinned(cuffs, M.shirt); if (arms.p.length) skinned(arms, M.skin);
 
   // ---------- trousers: wide straight legs; each runs up to the waist as half of the hips, so the two close into a centre seam above the crotch ----------
   // rows: [y, centre x, half width, half depth, outer roundness, inner roundness]
