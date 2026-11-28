@@ -777,15 +777,22 @@ room.add(at(backpack(0x7a2430), .78, 0, -.62)); room.children.at(-1).rotation.y 
 [[0x3b4a5c,.0],[0xb5532e,.4],[0xe6e2d8,-.3]].forEach(([c,r],i)=>{ const p = box(.42,.05,.3,mat(c,{roughness:1}),.02); p.position.set(-1.72+i*.05,.025+i*.045,.32+i*.03); p.rotation.y = r; room.add(p); });
 
 
+// break text into rows that fit `max` pixels in the canvas's current font
+function wrapText(g, text, max){ const rows = [''];
+  for (const wd of text.split(' ')){ const t = rows.at(-1) ? rows.at(-1) + ' ' + wd : wd; if (g.measureText(t).width > max && rows.at(-1)) rows.push(wd); else rows[rows.length - 1] = t; }
+  return rows; }
+// the line over someone's head when you hover them: a longer line wraps, and the bubble grows to hold it
 function makeBubble(text){
-  const { tex } = canvasTex(640,150,(g,w,h)=>{
-    g.font = '500 44px "Geist", sans-serif'; const tw = Math.min(w-40, g.measureText(text).width + 64), x = (w-tw)/2;
-    g.fillStyle = '#f4f2ee'; g.beginPath(); g.roundRect(x,14,tw,92,46); g.fill();
-    g.beginPath(); g.moveTo(w/2-16,104); g.lineTo(w/2,136); g.lineTo(w/2+16,104); g.fill();
-    g.fillStyle = '#0b0b0a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w/2, 62);
+  const m = document.createElement('canvas').getContext('2d'); m.font = '500 44px "Geist", sans-serif';
+  const L = wrapText(m, text, 520).slice(0, 3), w = 640, h = 150 + (L.length - 1)*50, bh = 92 + (L.length - 1)*50;
+  const { tex } = canvasTex(w, h, g=>{
+    g.font = m.font; const tw = Math.min(w - 40, Math.max(...L.map(l => g.measureText(l).width)) + 64), x = (w - tw)/2;
+    g.fillStyle = '#f4f2ee'; g.beginPath(); g.roundRect(x, 14, tw, bh, 46); g.fill();
+    g.beginPath(); g.moveTo(w/2 - 16, 12 + bh); g.lineTo(w/2, 44 + bh); g.lineTo(w/2 + 16, 12 + bh); g.fill();
+    g.fillStyle = '#0b0b0a'; g.textAlign = 'center'; g.textBaseline = 'middle'; L.forEach((l, i) => g.fillText(l, w/2, 62 + i*50));
   });
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true, depthTest:false, toneMapped:false }));
-  s.scale.set(.6,.14,1); s.renderOrder = 10; s.visible = false; return s;
+  s.userData.a = h/w; s.renderOrder = 10; s.visible = false; return s;
 }
 const figs = {};
 
@@ -1345,13 +1352,11 @@ function quietCard(){ $('card').hidden = true; active = null; document.querySele
 function rayFrom(e){ pointer.set(e.clientX/innerWidth*2-1, -(e.clientY/innerHeight)*2+1); raycaster.setFromCamera(pointer, camera); return raycaster; }
 // speech: a line over someone's head for a few seconds; redrawn per line, wraps to two lines
 function makeSpeech(){
-  const c = canvasTex(768, 220), sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:c.tex, transparent:true, depthTest:false, toneMapped:false }));
+  const c = canvasTex(768, 272), sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:c.tex, transparent:true, depthTest:false, toneMapped:false }));
   sp.renderOrder = 11; sp.visible = false;
   return { sprite:sp, set(text){
-    const g = c.ctx, w = 768, h = 220; g.clearRect(0,0,w,h); g.font = '500 44px "Geist", sans-serif';
-    const lines = [''];
-    for (const wd of text.split(' ')){ const t = lines.at(-1) ? lines.at(-1) + ' ' + wd : wd; if (g.measureText(t).width > w - 120 && lines.at(-1)) lines.push(wd); else lines[lines.length - 1] = t; }
-    const L = lines.slice(0, 2), tw = Math.min(w - 40, Math.max(...L.map(l=>g.measureText(l).width)) + 70), bh = 44 + L.length*52, x = (w - tw)/2, y = h - 34 - bh;
+    const g = c.ctx, w = 768, h = 272; g.clearRect(0,0,w,h); g.font = '500 44px "Geist", sans-serif';
+    const L = wrapText(g, text, w - 120).slice(0, 3), tw = Math.min(w - 40, Math.max(...L.map(l=>g.measureText(l).width)) + 70), bh = 44 + L.length*52, x = (w - tw)/2, y = h - 34 - bh;
     g.fillStyle = '#f4f2ee'; g.beginPath(); g.roundRect(x, y, tw, bh, 40); g.fill();
     g.beginPath(); g.moveTo(w/2 - 16, y + bh - 2); g.lineTo(w/2, y + bh + 28); g.lineTo(w/2 + 16, y + bh - 2); g.fill();
     g.fillStyle = '#0b0b0a'; g.textAlign = 'center'; g.textBaseline = 'middle'; L.forEach((l,i)=>g.fillText(l, w/2, y + 48 + i*52));
@@ -1657,14 +1662,18 @@ function animate(){
     const f = p.fig;
     f.lookW += ((active === p ? 1 : 0) - f.lookW) * Math.min(1, dt*3);
     if (f.speech){ const sp = f.speech.sprite; sp.visible = clockT < (f.speechUntil || 0);
-      if (sp.visible){ f.head.getWorldPosition(v3); let k = bubbleK(v3); sp.position.set(v3.x, v3.y + .12 + k*.42, v3.z);
+      if (sp.visible){ f.head.getWorldPosition(v3); let k = bubbleK(v3); sp.position.set(v3.x, v3.y + .12 + k*.454, v3.z);
         // up close the spot above the head can be off the top of the screen: bring the bubble down into view (it draws over the head),
         // sized again for where it ends up, which can be much nearer the camera (looking down at the chess board, say)
         v3.copy(sp.position).project(camera); if (v3.y > .76 && v3.z < 1){ v3.y = .76; sp.position.copy(v3.unproject(camera)); k = bubbleK(sp.position, .02); }
-        sp.scale.set(k, k/3.49, 1); } }
+        sp.scale.set(k, k*272/768, 1); } }
     if (f.bubble){
       f.bubble.visible = f.lookW > .05 && !f.speech?.sprite.visible;
-      if (f.bubble.visible){ f.head.getWorldPosition(v3); f.bubble.position.set(v3.x, v3.y + .5, v3.z); f.bubble.material.opacity = Math.min(1, f.lookW*1.4); }
+      // sized and kept on screen like the speech bubbles, with the same size of letters
+      if (f.bubble.visible){ const b = f.bubble, a = b.userData.a; f.head.getWorldPosition(v3); let k = bubbleK(v3)*640/768;
+        b.position.set(v3.x, v3.y + .12 + k*(.33 + a/2), v3.z);
+        v3.copy(b.position).project(camera); if (v3.y > .76 && v3.z < 1){ v3.y = .76; b.position.copy(v3.unproject(camera)); k = bubbleK(b.position, .02)*640/768; }
+        b.scale.set(k, k*a, 1); b.material.opacity = Math.min(1, f.lookW*1.4); }
     }
   }
   // the room door
